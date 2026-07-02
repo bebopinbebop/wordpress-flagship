@@ -15,10 +15,11 @@ data "aws_ami" "ubuntu" {
 
 locals {
   wordpress_user_data = templatefile("${path.module}/user-data.sh.tftpl", {
-    db_name     = var.db_name
-    db_username = var.db_username
-    db_password = var.db_password
-    db_host     = var.db_host
+    install_mode = var.install_mode
+    db_name      = var.db_name
+    db_username  = var.db_username
+    db_password  = var.db_password
+    db_host      = var.db_host
   })
 }
 
@@ -35,4 +36,3 @@ resource "aws_instance" "wordpress" {
     Project = var.project_name
   }
 }
-

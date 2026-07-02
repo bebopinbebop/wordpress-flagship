@@ -23,6 +23,17 @@ variable "key_name" {
   type        = string
 }
 
+variable "install_mode" {
+  description = "WordPress install mode. Use local-db for dev-lite or rds for dev-rds."
+  type        = string
+  default     = "rds"
+
+  validation {
+    condition     = contains(["local-db", "rds"], var.install_mode)
+    error_message = "install_mode must be either local-db or rds."
+  }
+}
+
 variable "db_name" {
   description = "WordPress database name."
   type        = string
@@ -43,4 +54,3 @@ variable "db_host" {
   description = "RDS database endpoint."
   type        = string
 }
-

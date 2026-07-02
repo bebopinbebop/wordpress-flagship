@@ -13,8 +13,8 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Production starts with the same MVP modules as dev.
-# Harden this environment before hosting real traffic.
+# dev-rds is the more realistic development environment.
+# It keeps WordPress on EC2 and moves MySQL into RDS private subnets.
 module "vpc" {
   source = "../../modules/vpc"
 
@@ -39,7 +39,14 @@ module "rds" {
   db_name             = var.db_name
   db_username         = var.db_username
   db_password         = var.db_password
-  skip_final_snapshot = false
+  skip_final_snapshot = true
+}
+
+module "backup_bucket" {
+  source = "../../modules/s3"
+
+  project_name = var.project_name
+  bucket_name  = var.backup_bucket_name
 }
 
 module "ec2" {
@@ -56,3 +63,4 @@ module "ec2" {
   db_password      = var.db_password
   db_host          = module.rds.db_endpoint
 }
+

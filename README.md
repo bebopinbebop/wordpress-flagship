@@ -1,24 +1,41 @@
 # WordPress-Flagship
 
+![Project Logo](images/aws_terra_wp.png)
+
 A project for deploying a WordPress hosting platform on AWS with Terraform.
 
-The first MVP deploys a single EC2 instance running WordPress, connected to an RDS MySQL database inside a custom VPC. The project is intentionally structured so it can grow into a more production-ready platform over time.
+The project supports two beginner-friendly development environments:
+
+- `dev-lite`: one EC2 instance with WordPress and MariaDB installed locally. This is the cheapest demo path and is intended to be destroyed after use.
+- `dev-rds`: one EC2 instance running WordPress, with RDS MySQL in private subnets and an S3 bucket reserved for backups.
+
+Both development environments intentionally avoid NAT Gateway, Load Balancer, and CloudFront in the first MVP to keep costs and complexity low.
 
 ## Architecture Goals
 
 - Build a repeatable WordPress infrastructure using Terraform.
 - Keep networking, security, compute, database, and storage concerns separated into modules.
-- Support separate `dev` and `prod` environments.
+- Support separate `dev-lite`, `dev-rds`, and `prod` environments.
 - Use placeholder variables for sensitive values and never commit real secrets.
 - Start with a simple EC2 + RDS MVP, then evolve toward high availability, backups, monitoring, and automation.
 
-## MVP Architecture
+## MVP Architecture Options
+
+### dev-lite
 
 - Custom VPC with public and private subnets.
-- EC2 instance in a public subnet for the WordPress web server.
+- One EC2 instance in a public subnet.
+- WordPress and MariaDB installed on the same instance.
+- No RDS, NAT Gateway, Load Balancer, or CloudFront.
+- Best for low-cost demos and portfolio screenshots.
+
+### dev-rds
+
+- Custom VPC with public and private subnets.
+- One EC2 instance in a public subnet.
 - RDS MySQL database in private subnets.
-- Security groups that allow web traffic to EC2 and database traffic only from the WordPress instance.
-- S3 bucket module reserved for future media, backups, or Terraform state patterns.
+- S3 bucket for future backups.
+- No NAT Gateway, Load Balancer, or CloudFront yet.
 
 ## Tech Stack
 
@@ -37,15 +54,22 @@ The first MVP deploys a single EC2 instance running WordPress, connected to an R
 ```text
 .
 ├── docs/
+│   ├── cost-control.md
 │   ├── cost-estimate.md
+│   ├── dev-lite-guide.md
+│   ├── dev-rds-guide.md
 │   ├── deployment-guide.md
 │   └── security.md
 ├── scripts/
 │   └── install-terraform.sh
-│   └── install-wordpress.sh
+│   ├── install-wordpress-local-db.sh
+│   ├── install-wordpress-rds.sh
+│   ├── install-wordpress.sh
+│   └── seed-wordpress.sh
 └── terraform/
     ├── environments/
-    │   ├── dev/
+    │   ├── dev-lite/
+    │   ├── dev-rds/
     │   └── prod/
     └── modules/
         ├── ec2/
@@ -57,14 +81,12 @@ The first MVP deploys a single EC2 instance running WordPress, connected to an R
 
 ## Phases
 
-### Phase 1: MVP
+### Phase 1: Development MVPs
 
-- Create the Terraform repository structure.
-- Deploy a custom VPC.
-- Deploy one EC2 instance for WordPress.
-- Deploy one RDS MySQL database.
-- Install WordPress with a bootstrap script.
-- Document deployment, security, and estimated costs.
+- Deploy `dev-lite` for low-cost single-instance demos.
+- Deploy `dev-rds` for a more realistic EC2 + RDS architecture.
+- Seed demo WordPress content with WP-CLI.
+- Document deployment, security, and cost controls.
 
 ### Phase 2: Production Hardening
 
@@ -95,4 +117,3 @@ The first MVP deploys a single EC2 instance running WordPress, connected to an R
 ## Secret Handling
 
 Secrets are saved as either env variables or in AWS Secret Manager
-

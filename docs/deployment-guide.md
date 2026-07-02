@@ -24,7 +24,8 @@ Do not commit:
 
 ## Environment Layout
 
-- `terraform/environments/dev` is for experimentation and lower-cost testing.
+- `terraform/environments/dev-lite` is for the lowest-cost demos with WordPress and MariaDB on one EC2 instance.
+- `terraform/environments/dev-rds` is for testing WordPress on EC2 with RDS MySQL in private subnets.
 - `terraform/environments/prod` is for production-like configuration.
 - Shared infrastructure logic lives in `terraform/modules`.
 
@@ -35,7 +36,7 @@ Do not commit:
 3. Initialize Terraform.
 
 ```bash
-cd terraform/environments/dev
+cd terraform/environments/dev-lite
 terraform init
 ```
 
@@ -77,4 +78,3 @@ terraform destroy
 ```
 
 Be careful with production resources because destroying infrastructure can remove databases, storage, and running servers.
-

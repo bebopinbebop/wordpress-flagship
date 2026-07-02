@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region where dev resources will be created."
+  description = "AWS region where dev-rds resources will be created."
   type        = string
   default     = "us-east-1"
 }
@@ -7,17 +7,17 @@ variable "aws_region" {
 variable "project_name" {
   description = "Name used to tag and name AWS resources."
   type        = string
-  default     = "wordpress-flagship-dev"
+  default     = "wordpress-dev-rds"
 }
 
 variable "vpc_cidr" {
   description = "CIDR block for the custom VPC."
   type        = string
-  default     = "10.10.0.0/16"
+  default     = "10.40.0.0/16"
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed to SSH into the WordPress instance. Replace with your own IP range."
+  description = "CIDR block allowed to SSH into the instance. Replace with your own IP range."
   type        = string
   default     = "0.0.0.0/0"
 }
@@ -35,21 +35,27 @@ variable "key_name" {
 }
 
 variable "db_name" {
-  description = "Initial MySQL database name for WordPress."
+  description = "Initial RDS MySQL database name for WordPress."
   type        = string
   default     = "wordpress"
 }
 
 variable "db_username" {
-  description = "Initial MySQL username for WordPress."
+  description = "Initial RDS MySQL username for WordPress."
   type        = string
   default     = "wordpress_user"
 }
 
 variable "db_password" {
-  description = "Initial MySQL password. Provide a real value outside Git."
+  description = "Initial RDS MySQL password. Provide a real value outside Git."
   type        = string
   sensitive   = true
   default     = "CHANGE_ME_DO_NOT_USE_IN_PRODUCTION"
+}
+
+variable "backup_bucket_name" {
+  description = "Globally unique S3 bucket name for dev-rds backups."
+  type        = string
+  default     = "replace-with-globally-unique-dev-rds-backup-bucket"
 }
 
