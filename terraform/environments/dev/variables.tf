@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Name used to tag and name AWS resources."
   type        = string
-  default     = "aws-wordpress-dev"
+  default     = "wordpress-flagship-dev"
 }
 
 variable "vpc_cidr" {

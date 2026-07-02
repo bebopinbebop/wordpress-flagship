@@ -1,6 +1,6 @@
-# aws-wordpress-terraform-platform
+# WordPress-Flagship
 
-A professional portfolio project for deploying a WordPress hosting platform on AWS with Terraform.
+A project for deploying a WordPress hosting platform on AWS with Terraform.
 
 The first MVP deploys a single EC2 instance running WordPress, connected to an RDS MySQL database inside a custom VPC. The project is intentionally structured so it can grow into a more production-ready platform over time.
 
@@ -41,6 +41,7 @@ The first MVP deploys a single EC2 instance running WordPress, connected to an R
 │   ├── deployment-guide.md
 │   └── security.md
 ├── scripts/
+│   └── install-terraform.sh
 │   └── install-wordpress.sh
 └── terraform/
     ├── environments/
@@ -93,7 +94,5 @@ The first MVP deploys a single EC2 instance running WordPress, connected to an R
 
 ## Secret Handling
 
-Do not commit real AWS credentials, database passwords, private keys, `.tfvars` files, or Terraform state files.
-
-Use placeholder variables locally, environment variables, AWS profiles, or a secrets manager when deploying for real.
+Secrets are saved as either env variables or in AWS Secret Manager
 
