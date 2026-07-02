@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+# User data runs when the EC2 instance first boots.
+# For a production setup, retrieve secrets from AWS Secrets Manager or Parameter Store.
+
+set -euo pipefail
+
+DB_NAME="${db_name}"
+DB_USER="${db_username}"
+DB_PASSWORD="${db_password}"
+DB_HOST="${db_host}"
+SITE_URL="http://$(curl -fsS http://169.254.169.254/latest/meta-data/public-hostname)"
+
+echo "Updating packages..."
+apt-get update -y
+
+echo "Installing Apache, PHP, and MySQL client packages..."
+apt-get install -y apache2 mysql-client unzip curl rsync \
+  php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip
+
+echo "Enabling and starting Apache..."
+systemctl enable apache2
+systemctl start apache2
+
+echo "Downloading WordPress..."
+cd /tmp
+curl -fsSLO https://wordpress.org/latest.zip
+unzip -q latest.zip
+
+echo "Copying WordPress files into the Apache web root..."
+rsync -a /tmp/wordpress/ /var/www/html/
+chown -R www-data:www-data /var/www/html/
+find /var/www/html/ -type d -exec chmod 755 {} \;
+find /var/www/html/ -type f -exec chmod 644 {} \;
+
+echo "Creating wp-config.php with database settings from Terraform variables..."
+cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+sed -i "s/database_name_here/$${DB_NAME}/" /var/www/html/wp-config.php
+sed -i "s/username_here/$${DB_USER}/" /var/www/html/wp-config.php
+sed -i "s/password_here/$${DB_PASSWORD}/" /var/www/html/wp-config.php
+sed -i "s/localhost/$${DB_HOST}/" /var/www/html/wp-config.php
+
+echo "Restarting Apache..."
+systemctl restart apache2
+
+echo "WordPress files are installed. Open $${SITE_URL} to finish setup."
