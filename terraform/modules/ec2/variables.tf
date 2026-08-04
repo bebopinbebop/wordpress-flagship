@@ -34,6 +34,12 @@ variable "install_mode" {
   }
 }
 
+variable "site_title" {
+  description = "Friendly website name shown on the demo landing page."
+  type        = string
+  default     = "Cloud WordPress Demo"
+}
+
 variable "db_name" {
   description = "WordPress database name."
   type        = string

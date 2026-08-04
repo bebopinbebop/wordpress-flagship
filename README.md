@@ -2,40 +2,150 @@
 
 ![Project Logo](images/aws_terra_wp.png)
 
-A project for deploying a WordPress hosting platform on AWS with Terraform.
+A Terraform-based AWS WordPress hosting platform built as a professional portfolio project.
 
-The project supports two beginner-friendly development environments:
+This project demonstrates how to launch a live WordPress demo site on AWS with reusable Terraform modules, clear documentation, cost-conscious environment choices, and beginner-friendly automation.
 
-- `dev-lite`: one EC2 instance with WordPress and MariaDB installed locally. This is the cheapest demo path and is intended to be destroyed after use.
-- `dev-rds`: one EC2 instance running WordPress, with RDS MySQL in private subnets and an S3 bucket reserved for backups.
+## What This Demonstrates
 
-Both development environments intentionally avoid NAT Gateway, Load Balancer, and CloudFront in the first MVP to keep costs and complexity low.
+- Terraform module design for AWS infrastructure.
+- VPC networking with public and private subnets.
+- EC2 bootstrap automation with user data.
+- WordPress installation on AWS.
+- Local MariaDB for low-cost demos.
+- RDS MySQL for a more realistic database tier.
+- S3 backup bucket planning.
+- Safe handling of local variables and secrets.
+- GitHub Actions checks for Terraform and Bash scripts.
 
-## Architecture Goals
-
-- Build a repeatable WordPress infrastructure using Terraform.
-- Keep networking, security, compute, database, and storage concerns separated into modules.
-- Support separate `dev-lite`, `dev-rds`, and `prod` environments.
-- Use placeholder variables for sensitive values and never commit real secrets.
-- Start with a simple EC2 + RDS MVP, then evolve toward high availability, backups, monitoring, and automation.
-
-## MVP Architecture Options
+## Demo Environments
 
 ### dev-lite
 
-- Custom VPC with public and private subnets.
+`dev-lite` is the lowest-cost demo path.
+
 - One EC2 instance in a public subnet.
-- WordPress and MariaDB installed on the same instance.
+- WordPress and MariaDB installed locally on the instance.
 - No RDS, NAT Gateway, Load Balancer, or CloudFront.
-- Best for low-cost demos and portfolio screenshots.
+- Best for quick portfolio demos that can be destroyed after use.
 
 ### dev-rds
 
-- Custom VPC with public and private subnets.
-- One EC2 instance in a public subnet.
+`dev-rds` is the more realistic development architecture.
+
+- One EC2 instance running WordPress.
 - RDS MySQL database in private subnets.
-- S3 bucket for future backups.
+- S3 bucket reserved for backups.
 - No NAT Gateway, Load Balancer, or CloudFront yet.
+- Best for showing database separation and AWS networking skills.
+
+## Guided Quickstart
+
+Use the guided launcher from WSL or another Bash shell:
+
+```bash
+./scripts/start-demo.sh
+```
+
+The script asks for:
+
+- Environment: `dev-lite` or `dev-rds`
+- Website display name
+- AWS CLI profile
+- AWS region
+- EC2 key pair name
+- SSH allowed CIDR
+- EC2 instance type
+- WordPress database settings
+
+It writes an ignored local `terraform.tfvars`, runs Terraform, and prints the final WordPress URL output.
+
+The script does not ask for AWS access keys. Use an AWS CLI profile or AWS SSO:
+
+```bash
+aws configure sso
+aws sso login --profile your-profile-name
+```
+
+## Cleanup
+
+AWS resources can cost money while they are running. Destroy demo environments when you are finished:
+
+```bash
+./scripts/destroy-stack.sh --env dev-lite --profile your-profile-name
+```
+
+Scan without deleting anything:
+
+```bash
+./scripts/destroy-stack.sh --scan-only --profile your-profile-name
+```
+
+Destroy both development environments:
+
+```bash
+./scripts/destroy-stack.sh --env all --profile your-profile-name
+```
+
+Production cleanup is blocked unless you explicitly add `--include-prod`.
+
+## Manual Deployment
+
+```bash
+cd terraform/environments/dev-lite
+terraform init
+terraform plan
+terraform apply
+terraform output wordpress_url
+```
+
+For the RDS-backed demo:
+
+```bash
+cd terraform/environments/dev-rds
+terraform init
+terraform plan
+terraform apply
+terraform output wordpress_url
+```
+
+## Project Structure
+
+```text
+.
+|-- .github/
+|   `-- workflows/
+|       `-- terraform-checks.yml
+|-- docs/
+|   |-- cost-control.md
+|   |-- cost-estimate.md
+|   |-- deployment-guide.md
+|   |-- dev-lite-guide.md
+|   |-- dev-rds-guide.md
+|   |-- portfolio-case-study.md
+|   `-- security.md
+|-- images/
+|   `-- aws_terra_wp.png
+|-- scripts/
+|   |-- diagnose-dev-lite.sh
+|   |-- install-terraform.sh
+|   |-- install-wordpress-local-db.sh
+|   |-- install-wordpress-rds.sh
+|   |-- install-wordpress.sh
+|   |-- seed-wordpress.sh
+|   `-- start-demo.sh
+`-- terraform/
+    |-- environments/
+    |   |-- dev-lite/
+    |   |-- dev-rds/
+    |   `-- prod/
+    `-- modules/
+        |-- ec2/
+        |-- rds/
+        |-- s3/
+        |-- security/
+        `-- vpc/
+```
 
 ## Tech Stack
 
@@ -46,74 +156,42 @@ Both development environments intentionally avoid NAT Gateway, Load Balancer, an
 - AWS S3
 - Bash
 - WordPress
-- Apache or Nginx
+- Apache
 - PHP
+- MariaDB
 
-## Project Structure
+## Roadmap
 
-```text
-.
-├── docs/
-│   ├── cost-control.md
-│   ├── cost-estimate.md
-│   ├── dev-lite-guide.md
-│   ├── dev-rds-guide.md
-│   ├── deployment-guide.md
-│   └── security.md
-├── scripts/
-│   └── install-terraform.sh
-│   ├── install-wordpress-local-db.sh
-│   ├── install-wordpress-rds.sh
-│   ├── install-wordpress.sh
-│   └── seed-wordpress.sh
-└── terraform/
-    ├── environments/
-    │   ├── dev-lite/
-    │   ├── dev-rds/
-    │   └── prod/
-    └── modules/
-        ├── ec2/
-        ├── rds/
-        ├── s3/
-        ├── security/
-        └── vpc/
-```
+### Phase 1: Demo Reliability
 
-## Phases
+- Make `dev-lite` deploy cleanly from the guided launcher.
+- Print the live website URL at the end of deployment.
+- Keep local state and secrets out of Git.
+- Add screenshots of the deployed demo.
 
-### Phase 1: Development MVPs
+### Phase 2: RDS Architecture
 
-- Deploy `dev-lite` for low-cost single-instance demos.
-- Deploy `dev-rds` for a more realistic EC2 + RDS architecture.
-- Seed demo WordPress content with WP-CLI.
-- Document deployment, security, and cost controls.
+- Validate `dev-rds` end to end.
+- Document private RDS networking.
+- Add backup and restore examples.
+- Add a specific `dev-rds` architecture diagram.
 
-### Phase 2: Production Hardening
+### Phase 3: Production Hardening
 
 - Add HTTPS with an Application Load Balancer and ACM certificate.
 - Move EC2 instances into private subnets.
-- Add NAT gateway or private package installation strategy.
-- Add automated RDS backups and snapshot policies.
+- Use SSM Session Manager instead of public SSH.
 - Add CloudWatch logs, alarms, and dashboards.
 
-### Phase 3: Scalability
+### Phase 4: Scalability
 
-- Add Auto Scaling Group support.
 - Store WordPress uploads in S3.
 - Add CloudFront CDN.
-- Add ElastiCache for object/page caching.
-- Split reusable modules into versioned releases.
-
-## Deliverables
-
-- Beginner-friendly Terraform module structure.
-- Separate development and production environment folders.
-- WordPress installation script.
-- Deployment guide.
-- Security notes.
-- Cost estimate notes.
-- A clean GitHub-ready project layout.
+- Add Auto Scaling Group support.
+- Add ElastiCache for object or page caching.
 
 ## Secret Handling
 
-Secrets are saved as either env variables or in AWS Secret Manager
+Do not commit real AWS credentials, database passwords, private keys, `.tfvars` files, or Terraform state files.
+
+Use AWS CLI profiles, AWS SSO, local ignored `terraform.tfvars` files, environment variables, AWS Secrets Manager, or AWS Systems Manager Parameter Store.

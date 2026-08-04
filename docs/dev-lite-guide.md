@@ -13,6 +13,14 @@ It creates one EC2 instance and installs both WordPress and MariaDB on that same
 
 ## Deploy
 
+Guided deployment:
+
+```bash
+./scripts/start-demo.sh
+```
+
+Manual deployment:
+
 ```bash
 cd terraform/environments/dev-lite
 terraform init

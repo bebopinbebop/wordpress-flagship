@@ -32,3 +32,18 @@ Cost controls:
 - Tag all resources with the project name.
 - Review idle EC2, RDS, EBS, and snapshot resources weekly.
 
+## Cleanup Script
+
+Use the cleanup helper to destroy Terraform-managed demo resources:
+
+```bash
+./scripts/destroy-stack.sh --env dev-lite --profile your-profile-name
+```
+
+Use scan-only mode before or after cleanup:
+
+```bash
+./scripts/destroy-stack.sh --scan-only --profile your-profile-name
+```
+
+The script prefers `terraform destroy` because Terraform understands resource dependencies. It also shows tagged AWS resources that may still cost money, such as EC2 instances, EBS volumes, RDS databases, NAT gateways, and load balancers.

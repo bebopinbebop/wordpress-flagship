@@ -34,6 +34,12 @@ variable "key_name" {
   default     = "replace-with-your-key-pair"
 }
 
+variable "site_title" {
+  description = "Friendly website name shown on the demo landing page."
+  type        = string
+  default     = "Cloud WordPress Demo"
+}
+
 variable "db_name" {
   description = "Initial RDS MySQL database name for WordPress."
   type        = string
@@ -58,4 +64,3 @@ variable "backup_bucket_name" {
   type        = string
   default     = "replace-with-globally-unique-dev-rds-backup-bucket"
 }
-

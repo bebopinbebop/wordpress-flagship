@@ -31,6 +31,23 @@ Do not commit:
 
 ## MVP Deployment Flow
 
+The easiest demo path is the guided launcher:
+
+```bash
+./scripts/start-demo.sh
+```
+
+The launcher asks for the environment, website name, AWS profile, region, key pair, SSH CIDR, and database settings. It writes a local ignored `terraform.tfvars` file and prints the final Terraform URL output after deployment.
+
+Use AWS CLI profiles or AWS SSO instead of entering AWS access keys into scripts:
+
+```bash
+aws configure sso
+aws sso login --profile your-profile-name
+```
+
+## Manual Deployment Flow
+
 1. Review the variables in the selected environment.
 2. Replace placeholder values locally using environment variables, CLI variables, or an uncommitted `.tfvars` file.
 3. Initialize Terraform.

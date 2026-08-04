@@ -20,6 +20,9 @@ Use one of these safer options:
 - AWS Systems Manager Parameter Store.
 - Environment variables in a secure CI/CD system.
 - Local `.tfvars` files that are ignored by Git.
+- AWS CLI profiles or AWS SSO for account authentication.
+
+Do not paste AWS access keys into the guided launcher. The launcher expects an existing AWS CLI profile and verifies it with `aws sts get-caller-identity`.
 
 ## Network Security
 
@@ -49,4 +52,3 @@ Future production improvements should include:
 - Install only trusted plugins.
 - Limit file write access where possible.
 - Add web application firewall protection before production.
-

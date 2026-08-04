@@ -1,3 +1,8 @@
+output "instance_id" {
+  description = "EC2 instance ID for the WordPress server."
+  value       = module.ec2.instance_id
+}
+
 output "wordpress_public_ip" {
   description = "Public IP address for the WordPress EC2 instance."
   value       = module.ec2.public_ip
@@ -13,4 +18,3 @@ output "database_endpoint" {
   value       = module.rds.db_endpoint
   sensitive   = true
 }
-

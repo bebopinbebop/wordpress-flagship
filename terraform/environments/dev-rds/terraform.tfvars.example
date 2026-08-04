@@ -1,0 +1,32 @@
+# Example values for the dev-rds environment.
+# Copy this file to terraform.tfvars for local use, then replace placeholders.
+# Do not commit terraform.tfvars or any real secrets.
+
+aws_region = "us-east-1"
+
+project_name = "wordpress-dev-rds"
+
+vpc_cidr = "10.40.0.0/16"
+
+# Replace with your own public IP range before using SSH.
+# Example format: "203.0.113.10/32"
+allowed_ssh_cidr = "0.0.0.0/0"
+
+instance_type = "t3.micro"
+
+# Must match an existing EC2 key pair in the selected AWS region.
+key_name = "replace-with-your-key-pair"
+
+site_title = "Cloud WordPress Demo"
+
+db_name = "wordpress"
+
+db_username = "wordpress_user"
+
+# S3 bucket names must be globally unique.
+backup_bucket_name = "replace-with-globally-unique-dev-rds-backup-bucket"
+
+# Provide this value through an uncommitted terraform.tfvars file,
+# an environment variable, or a secrets manager. Do not put real passwords here.
+# db_password = "replace-with-a-secure-local-only-value"
+

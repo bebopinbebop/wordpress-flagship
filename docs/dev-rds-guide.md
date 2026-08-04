@@ -13,6 +13,14 @@ It creates one EC2 instance for WordPress, one RDS MySQL database in private sub
 
 ## Deploy
 
+Guided deployment:
+
+```bash
+./scripts/start-demo.sh
+```
+
+Manual deployment:
+
 ```bash
 cd terraform/environments/dev-rds
 terraform init

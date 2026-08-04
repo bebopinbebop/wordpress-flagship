@@ -34,6 +34,12 @@ variable "key_name" {
   default     = "replace-with-your-key-pair"
 }
 
+variable "site_title" {
+  description = "Friendly website name shown on the demo landing page."
+  type        = string
+  default     = "Cloud WordPress Demo"
+}
+
 variable "db_name" {
   description = "Local MariaDB database name for WordPress."
   type        = string
@@ -52,4 +58,3 @@ variable "db_password" {
   sensitive   = true
   default     = "CHANGE_ME_DO_NOT_USE_IN_PRODUCTION"
 }
-

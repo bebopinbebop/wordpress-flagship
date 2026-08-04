@@ -16,6 +16,7 @@ data "aws_ami" "ubuntu" {
 locals {
   wordpress_user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     install_mode = var.install_mode
+    site_title   = var.site_title
     db_name      = var.db_name
     db_username  = var.db_username
     db_password  = var.db_password
@@ -34,5 +35,6 @@ resource "aws_instance" "wordpress" {
   tags = {
     Name    = "${var.project_name}-wordpress"
     Project = var.project_name
+    Site    = var.site_title
   }
 }

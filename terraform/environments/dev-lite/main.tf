@@ -39,9 +39,9 @@ module "ec2" {
   instance_type    = var.instance_type
   key_name         = var.key_name
   install_mode     = "local-db"
+  site_title       = var.site_title
   db_name          = var.db_name
   db_username      = var.db_username
   db_password      = var.db_password
   db_host          = "localhost"
 }
-
