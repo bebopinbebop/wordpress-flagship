@@ -3,6 +3,7 @@
 # Guided launcher for the WordPress Terraform demo.
 # It writes an ignored terraform.tfvars file locally, then runs Terraform.
 # It never asks for AWS access keys; use an AWS CLI profile or AWS SSO instead.
+# AWS Account has to be signed in locally in the shell.
 
 set -euo pipefail
 
