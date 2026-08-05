@@ -22,8 +22,18 @@ prompt_secret() {
   local value
 
   read -r -s -p "$label: " value
-  echo
+  echo >&2
   echo "$value"
+}
+
+hcl_string() {
+  local value="$1"
+
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  value="${value//$'\n'/\\n}"
+  value="${value//$'\r'/}"
+  echo "\"$value\""
 }
 
 slugify() {
@@ -42,6 +52,52 @@ require_command() {
   fi
 }
 
+wait_for_wordpress() {
+  local url="$1"
+  local admin_user="$2"
+  local admin_password="$3"
+  local max_attempts="${4:-80}"
+  local sleep_seconds="${5:-15}"
+
+  url="${url%/}"
+
+  echo "Waiting for EC2 first-boot setup to finish..."
+  echo "Do not worry if the browser fails during this step; Apache/PHP/WordPress may still be installing."
+  echo "Checking $url/index.php every $sleep_seconds seconds for up to $max_attempts attempts."
+
+  for attempt in $(seq 1 "$max_attempts"); do
+    if curl -fsS --connect-timeout 5 --max-time 10 "$url/index.php" >/dev/null 2>&1; then
+      echo
+      echo "The site is ready. It is a good time to check the EC2 instance in your browser:"
+      echo "  WordPress site: $url/"
+      echo "  WordPress admin: $url/wp-admin/"
+      echo "  Static infrastructure demo: $url/demo/"
+      echo
+      echo "WordPress admin login:"
+      echo "  Username: $admin_user"
+      echo "  Password: $admin_password"
+      echo
+      echo "Demo note: change this password inside WordPress before using the site for anything public."
+      return 0
+    fi
+
+    printf 'Still waiting for WordPress... attempt %s/%s\r' "$attempt" "$max_attempts"
+    sleep "$sleep_seconds"
+  done
+
+  echo
+  echo "Terraform created the AWS resources, but WordPress did not answer before the wait timeout."
+  echo "The instance may still be installing packages, especially on a small EC2 instance."
+  echo "Try these URLs again in a few minutes:"
+  echo "  $url/"
+  echo "  $url/wp-admin/"
+  echo "  $url/demo/"
+  echo
+  echo "For troubleshooting over SSH:"
+  echo "  sudo tail -n 120 /var/log/wordpress-bootstrap.log"
+  return 1
+}
+
 echo "WordPress Flagship Demo Launcher"
 echo
 echo "This script creates local Terraform variables and deploys a demo site."
@@ -50,6 +106,11 @@ echo
 
 require_command terraform
 require_command aws
+require_command zip
+require_command curl
+
+echo "The default flow uses WordPress at / and the static demo site at /demo/."
+echo
 
 ENVIRONMENT="$(prompt_default "Environment: dev-lite or dev-rds" "dev-lite")"
 if [ "$ENVIRONMENT" != "dev-lite" ] && [ "$ENVIRONMENT" != "dev-rds" ]; then
@@ -58,6 +119,12 @@ if [ "$ENVIRONMENT" != "dev-lite" ] && [ "$ENVIRONMENT" != "dev-rds" ]; then
 fi
 
 SITE_TITLE="$(prompt_default "Website display name" "Cloud WordPress Demo")"
+USE_CUSTOM_STATIC_SITE="$(prompt_default "Use a custom static demo folder instead of website/default-site? yes or no" "no")"
+if [ "$USE_CUSTOM_STATIC_SITE" = "yes" ]; then
+  WEBSITE_SOURCE="$(prompt_default "Custom static website folder path" "$ROOT_DIR/website/default-site")"
+else
+  WEBSITE_SOURCE="$ROOT_DIR/website/default-site"
+fi
 AWS_PROFILE_NAME="$(prompt_default "AWS CLI profile name" "default")"
 AWS_REGION="$(prompt_default "AWS region" "us-east-1")"
 KEY_NAME="$(prompt_default "Existing EC2 key pair name" "replace-with-your-key-pair")"
@@ -90,6 +157,16 @@ if [ ! -d "$ENV_DIR" ]; then
   exit 1
 fi
 
+if [ ! -d "$WEBSITE_SOURCE" ]; then
+  echo "Static website folder does not exist: $WEBSITE_SOURCE"
+  exit 1
+fi
+
+if [ ! -f "$WEBSITE_SOURCE/index.html" ]; then
+  echo "Static website folder must contain an index.html file: $WEBSITE_SOURCE"
+  exit 1
+fi
+
 if ! aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" >/dev/null 2>&1; then
   echo
   echo "AWS profile '$AWS_PROFILE_NAME' is not authenticated."
@@ -99,24 +176,36 @@ if ! aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" >/dev/null 2>&1; 
   exit 1
 fi
 
+GENERATED_DIR="$ROOT_DIR/.generated"
+SITE_ARCHIVE="$GENERATED_DIR/${ENVIRONMENT}-${PROJECT_SLUG}-site.zip"
+
+mkdir -p "$GENERATED_DIR"
+echo
+echo "Packaging static website from $WEBSITE_SOURCE"
+(
+  cd "$WEBSITE_SOURCE"
+  zip -qr "$SITE_ARCHIVE" .
+)
+
 echo
 echo "Writing local Terraform variables to $TFVARS_FILE"
 cat > "$TFVARS_FILE" <<VARS
-aws_region       = "$AWS_REGION"
-project_name     = "$PROJECT_NAME"
-allowed_ssh_cidr = "$ALLOWED_SSH_CIDR"
-instance_type    = "$INSTANCE_TYPE"
-key_name         = "$KEY_NAME"
-site_title       = "$SITE_TITLE"
-db_name          = "$DB_NAME"
-db_username      = "$DB_USERNAME"
-db_password      = "$DB_PASSWORD"
+aws_region        = $(hcl_string "$AWS_REGION")
+project_name      = $(hcl_string "$PROJECT_NAME")
+allowed_ssh_cidr  = $(hcl_string "$ALLOWED_SSH_CIDR")
+instance_type     = $(hcl_string "$INSTANCE_TYPE")
+key_name          = $(hcl_string "$KEY_NAME")
+site_title        = $(hcl_string "$SITE_TITLE")
+site_archive_path = $(hcl_string "$SITE_ARCHIVE")
+db_name           = $(hcl_string "$DB_NAME")
+db_username       = $(hcl_string "$DB_USERNAME")
+db_password       = $(hcl_string "$DB_PASSWORD")
 VARS
 
 if [ "$ENVIRONMENT" = "dev-rds" ]; then
   BACKUP_BUCKET_NAME="$(prompt_default "Globally unique S3 backup bucket name" "${PROJECT_NAME}-backups-${AWS_REGION}")"
   cat >> "$TFVARS_FILE" <<VARS
-backup_bucket_name = "$BACKUP_BUCKET_NAME"
+backup_bucket_name = $(hcl_string "$BACKUP_BUCKET_NAME")
 VARS
 fi
 
@@ -132,7 +221,9 @@ AWS_PROFILE="$AWS_PROFILE_NAME" terraform plan
 echo
 read -r -p "Apply these changes and create AWS resources? Type yes to continue: " CONFIRM
 if [ "$CONFIRM" != "yes" ]; then
-  echo "Apply cancelled. Your local terraform.tfvars file was left in place for review."
+  echo "Apply cancelled. No AWS resources were created."
+  echo "Your local terraform.tfvars file was left in place for review."
+  echo "Run ./scripts/start-demo.sh again and type yes at the final prompt to create EC2 and related resources."
   exit 0
 fi
 
@@ -145,6 +236,10 @@ echo "Demo deployment complete."
 echo
 terraform output
 echo
-echo "Open the wordpress_url output in your browser."
-echo "The instance may need a few minutes to finish installing packages after Terraform completes."
-
+WORDPRESS_URL="$(terraform output -raw wordpress_url 2>/dev/null || true)"
+if [ -n "$WORDPRESS_URL" ]; then
+  wait_for_wordpress "$WORDPRESS_URL" "demo_admin" "$DB_PASSWORD" 80 15 || true
+else
+  echo "Open the wordpress_url output in your browser for WordPress."
+  echo "Open wordpress_url/demo/ for the static infrastructure demo."
+fi

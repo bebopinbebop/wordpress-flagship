@@ -9,6 +9,7 @@ exec > >(tee -a /var/log/wordpress-bootstrap.log) 2>&1
 
 INSTALL_MODE="${install_mode}"
 SITE_TITLE="${site_title}"
+SITE_ARCHIVE_BASE64="${site_archive}"
 DB_NAME="${db_name}"
 DB_USER="${db_username}"
 DB_PASSWORD="${db_password}"
@@ -46,6 +47,7 @@ curl -fsSLO https://wordpress.org/latest.zip
 unzip -q latest.zip
 
 echo "Copying WordPress files into the Apache web root..."
+rm -f /var/www/html/index.html
 rsync -a /tmp/wordpress/ /var/www/html/
 chown -R www-data:www-data /var/www/html/
 find /var/www/html/ -type d -exec chmod 755 {} \;
@@ -58,8 +60,67 @@ sed -i "s/username_here/$${DB_USER}/" /var/www/html/wp-config.php
 sed -i "s/password_here/$${DB_PASSWORD}/" /var/www/html/wp-config.php
 sed -i "s/localhost/$${DB_HOST}/" /var/www/html/wp-config.php
 
-echo "Creating the demo landing page..."
-cat > /var/www/html/index.html <<HTML
+echo "Installing WP-CLI..."
+curl -fsSLo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+chmod +x /usr/local/bin/wp
+
+echo "Installing WordPress core content..."
+if ! sudo -u www-data wp core is-installed --path=/var/www/html; then
+  sudo -u www-data wp core install \
+    --path=/var/www/html \
+    --url="$${SITE_URL}" \
+    --title="$${SITE_TITLE}" \
+    --admin_user="demo_admin" \
+    --admin_password="$${DB_PASSWORD}" \
+    --admin_email="admin@example.com" \
+    --skip-email
+fi
+
+HOME_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='Home' --post_status=publish --porcelain)"
+ABOUT_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='About' --post_status=publish --porcelain)"
+SERVICES_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='Services' --post_status=publish --porcelain)"
+
+sudo -u www-data wp post update "$${HOME_ID}" --path=/var/www/html --post_content="<h2>Welcome to $${SITE_TITLE}</h2><p>This WordPress site is hosted on AWS infrastructure created with Terraform. Edit this page from the WordPress admin dashboard.</p><p><a href='/demo/'>View the Terraform infrastructure demo pages</a>.</p>"
+sudo -u www-data wp post update "$${ABOUT_ID}" --path=/var/www/html --post_content="<p>This site demonstrates a repeatable WordPress hosting platform using AWS, Terraform, EC2, and either local MariaDB or RDS MySQL.</p>"
+sudo -u www-data wp post update "$${SERVICES_ID}" --path=/var/www/html --post_content="<p>Example services include WordPress rehosting, infrastructure-as-code setup, AWS cost controls, backup planning, and production hardening.</p>"
+
+sudo -u www-data wp option update show_on_front page --path=/var/www/html
+sudo -u www-data wp option update page_on_front "$${HOME_ID}" --path=/var/www/html
+sudo -u www-data wp option update blogdescription "AWS WordPress Terraform platform" --path=/var/www/html
+
+if ! sudo -u www-data wp menu list --path=/var/www/html --field=name | grep -Fxq "Primary Navigation"; then
+  sudo -u www-data wp menu create "Primary Navigation" --path=/var/www/html
+fi
+
+sudo -u www-data wp menu item add-post "Primary Navigation" "$${HOME_ID}" --path=/var/www/html || true
+sudo -u www-data wp menu item add-post "Primary Navigation" "$${ABOUT_ID}" --path=/var/www/html || true
+sudo -u www-data wp menu item add-post "Primary Navigation" "$${SERVICES_ID}" --path=/var/www/html || true
+sudo -u www-data wp menu item add-custom "Primary Navigation" "Infrastructure Demo" "$${SITE_URL}/demo/" --path=/var/www/html || true
+
+if [ -n "$${SITE_ARCHIVE_BASE64}" ]; then
+  echo "Installing static website archive under /demo..."
+  mkdir -p /tmp/static-site
+  printf '%s' "$${SITE_ARCHIVE_BASE64}" | base64 -d > /tmp/static-site/site.zip
+  unzip -oq /tmp/static-site/site.zip -d /tmp/static-site/extracted
+  mkdir -p /var/www/html/demo
+
+  if [ -f /tmp/static-site/extracted/index.html ]; then
+    rsync -a /tmp/static-site/extracted/ /var/www/html/demo/
+  else
+    first_index="$(find /tmp/static-site/extracted -mindepth 2 -name index.html | head -n 1)"
+    if [ -n "$${first_index}" ]; then
+      site_root="$(dirname "$${first_index}")"
+      rsync -a "$${site_root}/" /var/www/html/demo/
+    else
+      echo "Static site archive did not contain index.html. Creating fallback demo page."
+    fi
+  fi
+fi
+
+if [ ! -f /var/www/html/demo/index.html ]; then
+  echo "Creating fallback static demo page..."
+  mkdir -p /var/www/html/demo
+  cat > /var/www/html/demo/index.html <<HTML
 <!doctype html>
 <html lang="en">
 <head>
@@ -199,7 +260,7 @@ cat > /var/www/html/index.html <<HTML
         <div>
           <div class="mark">WP</div>
           <h2>Demo is online</h2>
-          <p>WordPress core is available at <a href="/index.php">/index.php</a>.</p>
+          <p>WordPress is the main site at <a href="/">/</a> and admin is available at <a href="/wp-admin/">/wp-admin/</a>.</p>
         </div>
       </div>
     </section>
@@ -212,8 +273,15 @@ cat > /var/www/html/index.html <<HTML
 </body>
 </html>
 HTML
+fi
+
+chown -R www-data:www-data /var/www/html/
+find /var/www/html/ -type d -exec chmod 755 {} \;
+find /var/www/html/ -type f -exec chmod 644 {} \;
 
 echo "Restarting Apache..."
 systemctl restart apache2
 
-echo "WordPress files are installed. Open $${SITE_URL} to view the demo."
+echo "WordPress is installed at $${SITE_URL}."
+echo "Static infrastructure demo is available at $${SITE_URL}/demo/."
+echo "WordPress admin is available at $${SITE_URL}/wp-admin/ with user demo_admin."

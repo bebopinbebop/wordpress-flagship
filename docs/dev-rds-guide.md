@@ -19,6 +19,14 @@ Guided deployment:
 ./scripts/start-demo.sh
 ```
 
+When prompted for `Static website folder path`, press Enter to use `website/default-site`, or enter another folder that contains `index.html`.
+
+After the instance finishes bootstrapping:
+
+- Visit `/` for the WordPress site.
+- Visit `/wp-admin/` for WordPress admin.
+- Visit `/demo/` for the static Terraform/AWS demo pages.
+
 Manual deployment:
 
 ```bash

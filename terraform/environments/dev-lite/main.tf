@@ -40,8 +40,11 @@ module "ec2" {
   key_name         = var.key_name
   install_mode     = "local-db"
   site_title       = var.site_title
-  db_name          = var.db_name
-  db_username      = var.db_username
-  db_password      = var.db_password
-  db_host          = "localhost"
+  site_archive_base64 = (
+    var.site_archive_path != "" ? filebase64(var.site_archive_path) : ""
+  )
+  db_name     = var.db_name
+  db_username = var.db_username
+  db_password = var.db_password
+  db_host     = "localhost"
 }

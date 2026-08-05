@@ -19,6 +19,10 @@ key_name = "replace-with-your-key-pair"
 
 site_title = "Cloud WordPress Demo"
 
+# Created automatically by scripts/start-demo.sh.
+# The zip should contain index.html at the root.
+site_archive_path = "../../../.generated/dev-rds-cloud-wordpress-demo-site.zip"
+
 db_name = "wordpress"
 
 db_username = "wordpress_user"
@@ -29,4 +33,3 @@ backup_bucket_name = "replace-with-globally-unique-dev-rds-backup-bucket"
 # Provide this value through an uncommitted terraform.tfvars file,
 # an environment variable, or a secrets manager. Do not put real passwords here.
 # db_password = "replace-with-a-secure-local-only-value"
-

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloud WordPress Demo</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html">Cloud WordPress Demo</a>
+    <nav aria-label="Primary navigation">
+      <a href="index.html">Home</a>
+      <a href="services.html">Services</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Terraform + AWS + WordPress</p>
+        <h1>Launch a charming WordPress-ready cloud demo.</h1>
+        <p class="lede">
+          This static mini-site is deployed by Terraform onto an EC2 instance under /demo.
+          Swap this folder with your own HTML project to show a custom client demo.
+        </p>
+        <div class="actions">
+          <a class="button primary" href="services.html">See the Stack</a>
+          <a class="button secondary" href="/">Open WordPress</a>
+        </div>
+      </div>
+      <div class="launch-card" aria-label="Deployment status card">
+        <div class="badge">Live on AWS</div>
+        <div class="orbital">
+          <span>EC2</span>
+          <span>VPC</span>
+          <span>PHP</span>
+          <strong>WP</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article>
+        <h2>Reusable Infrastructure</h2>
+        <p>Terraform modules keep networking, compute, security, and storage separated.</p>
+      </article>
+      <article>
+        <h2>Demo Friendly</h2>
+        <p>The dev-lite environment avoids RDS, NAT Gateway, load balancers, and CloudFront.</p>
+      </article>
+      <article>
+        <h2>Client Ready Story</h2>
+        <p>Show how a WordPress site can move from simple demo to managed database architecture.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <span>Built from the project website folder.</span>
+    <span>Replace it with your own HTML when launching.</span>
+  </footer>
+</body>
+</html>

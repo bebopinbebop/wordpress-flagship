@@ -40,6 +40,12 @@ variable "site_title" {
   default     = "Cloud WordPress Demo"
 }
 
+variable "site_archive_path" {
+  description = "Local path to a zip archive containing the static website files to deploy."
+  type        = string
+  default     = ""
+}
+
 variable "db_name" {
   description = "Initial MySQL database name for WordPress."
   type        = string

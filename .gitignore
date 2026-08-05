@@ -33,3 +33,5 @@ Thumbs.db
 # Logs
 *.log
 
+# Generated deployment bundles
+.generated/

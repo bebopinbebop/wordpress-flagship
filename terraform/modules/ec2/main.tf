@@ -17,6 +17,7 @@ locals {
   wordpress_user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     install_mode = var.install_mode
     site_title   = var.site_title
+    site_archive = var.site_archive_base64
     db_name      = var.db_name
     db_username  = var.db_username
     db_password  = var.db_password

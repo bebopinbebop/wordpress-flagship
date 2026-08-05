@@ -37,7 +37,20 @@ The easiest demo path is the guided launcher:
 ./scripts/start-demo.sh
 ```
 
-The launcher asks for the environment, website name, AWS profile, region, key pair, SSH CIDR, and database settings. It writes a local ignored `terraform.tfvars` file and prints the final Terraform URL output after deployment.
+The launcher asks for the environment, website name, static website folder, AWS profile, region, key pair, SSH CIDR, and database settings. It packages the static website folder into `.generated/`, writes a local ignored `terraform.tfvars` file, and prints the final Terraform URL output after deployment.
+
+The default website source is:
+
+```bash
+website/default-site
+```
+
+You can replace that folder or point the launcher at another HTML project. The folder must contain `index.html`.
+
+After bootstrap:
+
+- `/` is the WordPress site and can be edited from `/wp-admin/`.
+- `/demo/` is the static infrastructure demo packaged from the website folder.
 
 Use AWS CLI profiles or AWS SSO instead of entering AWS access keys into scripts:
 

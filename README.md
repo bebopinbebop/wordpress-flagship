@@ -6,12 +6,18 @@ A Terraform-based AWS WordPress hosting platform built as a professional portfol
 
 This project demonstrates how to launch a live WordPress demo site on AWS with reusable Terraform modules, clear documentation, cost-conscious environment choices, and beginner-friendly automation.
 
+It has two practical goals:
+
+- Build a new WordPress site on AWS with Terraform-managed hosting.
+- Provide a repeatable target platform for migrating/rehosting existing WordPress client sites.
+
 ## What This Demonstrates
 
 - Terraform module design for AWS infrastructure.
 - VPC networking with public and private subnets.
 - EC2 bootstrap automation with user data.
 - WordPress installation on AWS.
+- WordPress admin editing from `/wp-admin/`.
 - Local MariaDB for low-cost demos.
 - RDS MySQL for a more realistic database tier.
 - S3 backup bucket planning.
@@ -51,6 +57,7 @@ The script asks for:
 
 - Environment: `dev-lite` or `dev-rds`
 - Website display name
+- Static website folder path
 - AWS CLI profile
 - AWS region
 - EC2 key pair name
@@ -59,6 +66,10 @@ The script asks for:
 - WordPress database settings
 
 It writes an ignored local `terraform.tfvars`, runs Terraform, and prints the final WordPress URL output.
+
+By default, the launcher packages [website/default-site](website/default-site) and deploys it as the static infrastructure demo under `/demo/`. You can point the prompt at another folder if you want to deploy your own static HTML/CSS/JS project. The folder must contain an `index.html` file.
+
+WordPress owns the homepage at `/`, and the admin dashboard is available at `/wp-admin/`.
 
 The script does not ask for AWS access keys. Use an AWS CLI profile or AWS SSO:
 
@@ -122,6 +133,7 @@ terraform output wordpress_url
 |   |-- deployment-guide.md
 |   |-- dev-lite-guide.md
 |   |-- dev-rds-guide.md
+|   |-- migration-guide.md
 |   |-- portfolio-case-study.md
 |   `-- security.md
 |-- images/
@@ -132,8 +144,16 @@ terraform output wordpress_url
 |   |-- install-wordpress-local-db.sh
 |   |-- install-wordpress-rds.sh
 |   |-- install-wordpress.sh
+|   |-- prepare-migration.sh
 |   |-- seed-wordpress.sh
-|   `-- start-demo.sh
+|   |-- start-demo.sh
+|   `-- wait-for-site.sh
+|-- website/
+|   `-- default-site/
+|       |-- about.html
+|       |-- index.html
+|       |-- services.html
+|       `-- assets/
 `-- terraform/
     |-- environments/
     |   |-- dev-lite/

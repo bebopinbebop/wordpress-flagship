@@ -40,6 +40,12 @@ variable "site_title" {
   default     = "Cloud WordPress Demo"
 }
 
+variable "site_archive_base64" {
+  description = "Base64-encoded zip archive for the static website placed in /var/www/html."
+  type        = string
+  default     = ""
+}
+
 variable "db_name" {
   description = "WordPress database name."
   type        = string
