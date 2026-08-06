@@ -11,6 +11,44 @@ Terraform was chosen over AWS CloudFormation because Terraform is popular, vendo
 There are three sections to this project that each try and solve a unique problem as described below:
 ![Project Breakdown](images/project-breakdown.png)
 
+## wp-lite
+
+**`dev-lite`** is a cost-effective demonstration environment that uses Terraform to deploy a complete WordPress stack (Apache, PHP, MariaDB, and WordPress) on a single EC2 instance within a custom AWS VPC. It's intended for portfolio demonstrations, testing, and rapid deployment while keeping AWS costs to a minimum. See further detail [here](docs/dev-lite-guide.md).
+
+- Custom VPC with public and private subnets.
+- One EC2 instance in a public subnet that installs WP via its **User Data** that's been altered.
+- MariaDB installed on the same instance to support WP functionality like blog postings, plugins, and config files.
+- No RDS, NAT Gateway, Load Balancer, or CloudFront.
+
+## wp-rds (Relational Database Services)
+
+**`dev-rds`** is a production-oriented development environment that uses Terraform to deploy a custom AWS VPC, a WordPress EC2 instance, a private Amazon RDS MySQL database, and an S3 bucket for future backup workflows. This is meant for **Production Level Deployment**, so major costs are rendered on an AWS account. Designed for real-world AWS architecture, it separates the web and database tiers while securing the internal networking, managed database provisioning, and infrastructure automation. The environment provides a live WordPress site with data stored in RDS, making it ideal for migration testing, client hosting demonstrations, and preparing for future production enhancements. See further detail [here](docs/dev-rds-guide.md).
+
+- Custom VPC with public and private subnets.
+- One EC2 instance in a public subnet.
+- RDS MySQL database in private subnets.
+- S3 bucket for future backups.
+- [ ] TODO: No NAT Gateway, Load Balancer, or CloudFront yet.
+
+## wp-mig (Migration)
+
+**`dev-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It provisions a production-style AWS environment and provides a repeatable workflow for importing WordPress content, databases, and media into a secure AWS infrastructure. Intended for client migrations, portfolio demonstrations, and freelance engagements, `dev-mig` showcases Infrastructure as Code (IaC), migration automation, and best practices for transitioning WordPress sites with minimal downtime.
+
+- EC2 web server for the migrated WordPress site
+- Amazon RDS MySQL database
+- Amazon S3 for backups and migration files
+- Custom AWS VPC with public and private subnets
+- Secure Security Group configuration
+- WP-CLI migration automation
+- Database import workflow
+- `wp-content` import (themes, plugins, uploads)
+- Domain search-and-replace automation
+- Temporary staging/testing URL
+- DNS cutover planning
+- Rollback procedures
+- Future HTTPS support (ACM + Load Balancer)
+- Backup, monitoring, and production-readiness validation
+
 ### Requirements and Tips
 
 There are requirements to make this project work, as described below:
@@ -44,23 +82,6 @@ The deployed site uses WordPress as the main editable website:
 - Use placeholder variables for sensitive values and never commit real secrets.
 - Start with simple EC2-based MVPs, then evolve toward HTTPS, domains, backups, monitoring, and production automation.
 
-## MVP Architecture Options
-
-### dev-lite
-
-- Custom VPC with public and private subnets.
-- One EC2 instance in a public subnet.
-- WordPress and MariaDB installed on the same instance.
-- No RDS, NAT Gateway, Load Balancer, or CloudFront.
-- Best for low-cost demos and portfolio screenshots.
-
-### dev-rds
-
-- Custom VPC with public and private subnets.
-- One EC2 instance in a public subnet.
-- RDS MySQL database in private subnets.
-- S3 bucket for future backups.
-- No NAT Gateway, Load Balancer, or CloudFront yet.
 
 ## Tech Stack
 
