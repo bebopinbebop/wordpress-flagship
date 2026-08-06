@@ -19,7 +19,7 @@ Guided deployment:
 ./scripts/start-demo.sh
 ```
 
-When prompted for `Static website folder path`, press Enter to use `website/default-site`, or enter another folder that contains `index.html`.
+When prompted for the database password, remember that this is the hidden MariaDB login WordPress uses internally. When prompted for the WordPress admin password, use a separate password for the `/wp-admin/` browser login.
 
 After the instance finishes bootstrapping:
 
@@ -36,7 +36,7 @@ terraform plan
 terraform apply
 ```
 
-Use placeholder values in committed files. Provide real passwords only through local variables, environment variables, or an ignored `.tfvars` file.
+Use placeholder values in committed files. Provide real database and WordPress admin passwords only through local variables, environment variables, or an ignored `.tfvars` file.
 
 ## Seed Demo Content
 

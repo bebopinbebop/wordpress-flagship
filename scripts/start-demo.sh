@@ -140,15 +140,21 @@ fi
 PROJECT_NAME="$(prompt_default "Terraform project/resource name" "wp-${ENVIRONMENT}-${PROJECT_SLUG}")"
 DB_NAME="$(prompt_default "WordPress database name" "wordpress")"
 DB_USERNAME="$(prompt_default "WordPress database username" "wordpress_user")"
+WP_ADMIN_USER="$(prompt_default "WordPress admin username" "demo_admin")"
+WP_ADMIN_EMAIL="$(prompt_default "WordPress admin email" "admin@example.com")"
 
 if command -v openssl >/dev/null 2>&1; then
   GENERATED_DB_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=' | cut -c 1-24)"
+  GENERATED_WP_ADMIN_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=' | cut -c 1-24)"
 else
   GENERATED_DB_PASSWORD="CHANGE_ME_SET_A_LOCAL_SECRET"
+  GENERATED_WP_ADMIN_PASSWORD="CHANGE_ME_SET_A_LOCAL_SECRET"
 fi
 
-DB_PASSWORD="$(prompt_secret "Database password (leave blank to generate one)")"
+DB_PASSWORD="$(prompt_secret "Database password for WordPress-to-MySQL connection (leave blank to generate one)")"
 DB_PASSWORD="${DB_PASSWORD:-$GENERATED_DB_PASSWORD}"
+WP_ADMIN_PASSWORD="$(prompt_secret "WordPress admin password for browser login (leave blank to generate one)")"
+WP_ADMIN_PASSWORD="${WP_ADMIN_PASSWORD:-$GENERATED_WP_ADMIN_PASSWORD}"
 
 ENV_DIR="$ROOT_DIR/terraform/environments/$ENVIRONMENT"
 TFVARS_FILE="$ENV_DIR/terraform.tfvars"
@@ -201,6 +207,9 @@ site_archive_path = $(hcl_string "$SITE_ARCHIVE")
 db_name           = $(hcl_string "$DB_NAME")
 db_username       = $(hcl_string "$DB_USERNAME")
 db_password       = $(hcl_string "$DB_PASSWORD")
+wp_admin_user     = $(hcl_string "$WP_ADMIN_USER")
+wp_admin_email    = $(hcl_string "$WP_ADMIN_EMAIL")
+wp_admin_password = $(hcl_string "$WP_ADMIN_PASSWORD")
 VARS
 
 if [ "$ENVIRONMENT" = "dev-rds" ]; then
@@ -239,7 +248,7 @@ terraform output
 echo
 WORDPRESS_URL="$(terraform output -raw wordpress_url 2>/dev/null || true)"
 if [ -n "$WORDPRESS_URL" ]; then
-  wait_for_wordpress "$WORDPRESS_URL" "demo_admin" "$DB_PASSWORD" 80 15 || true
+  wait_for_wordpress "$WORDPRESS_URL" "$WP_ADMIN_USER" "$WP_ADMIN_PASSWORD" 80 15 || true
 else
   echo "Open the wordpress_url output in your browser for WordPress."
   echo "Open wordpress_url/demo/ for the static infrastructure demo."

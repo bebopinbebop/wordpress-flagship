@@ -22,6 +22,10 @@ locals {
     db_username  = var.db_username
     db_password  = var.db_password
     db_host      = var.db_host
+
+    wp_admin_user     = var.wp_admin_user
+    wp_admin_password = var.wp_admin_password
+    wp_admin_email    = var.wp_admin_email
   })
 }
 

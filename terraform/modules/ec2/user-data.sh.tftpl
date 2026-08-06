@@ -14,6 +14,9 @@ DB_NAME="${db_name}"
 DB_USER="${db_username}"
 DB_PASSWORD="${db_password}"
 DB_HOST="${db_host}"
+WP_ADMIN_USER="${wp_admin_user}"
+WP_ADMIN_PASSWORD="${wp_admin_password}"
+WP_ADMIN_EMAIL="${wp_admin_email}"
 SITE_URL="http://$(curl -fsS http://169.254.169.254/latest/meta-data/public-hostname)"
 
 echo "Starting WordPress bootstrap for $${SITE_TITLE}..."
@@ -70,9 +73,9 @@ if ! sudo -u www-data wp core is-installed --path=/var/www/html; then
     --path=/var/www/html \
     --url="$${SITE_URL}" \
     --title="$${SITE_TITLE}" \
-    --admin_user="demo_admin" \
-    --admin_password="$${DB_PASSWORD}" \
-    --admin_email="admin@example.com" \
+    --admin_user="$${WP_ADMIN_USER}" \
+    --admin_password="$${WP_ADMIN_PASSWORD}" \
+    --admin_email="$${WP_ADMIN_EMAIL}" \
     --skip-email
 fi
 
@@ -284,4 +287,4 @@ systemctl restart apache2
 
 echo "WordPress is installed at $${SITE_URL}."
 echo "Static infrastructure demo is available at $${SITE_URL}/demo/."
-echo "WordPress admin is available at $${SITE_URL}/wp-admin/ with user demo_admin."
+echo "WordPress admin is available at $${SITE_URL}/wp-admin/ with user $${WP_ADMIN_USER}."

@@ -8,7 +8,7 @@ This guide explains the intended deployment flow for the MVP AWS WordPress platf
 - AWS CLI configured with a named profile.
 - Terraform installed locally.
 - An EC2 key pair created in the target AWS region.
-- A safe way to provide database credentials, such as local environment variables or a secrets manager.
+- A safe way to provide database and WordPress admin credentials, such as local environment variables, ignored `.tfvars` files, or a secrets manager.
 
 ## Important Secret Reminder
 
@@ -18,6 +18,7 @@ Do not commit:
 
 - AWS access keys.
 - Database passwords.
+- WordPress admin passwords.
 - Private SSH keys.
 - Terraform state files.
 - `.tfvars` files containing sensitive values.
@@ -37,7 +38,7 @@ The easiest demo path is the guided launcher:
 ./scripts/start-demo.sh
 ```
 
-The launcher asks for the environment, website name, static website folder, AWS profile, region, key pair, SSH CIDR, and database settings. It packages the static website folder into `.generated/`, writes a local ignored `terraform.tfvars` file, and prints the final Terraform URL output after deployment.
+The launcher asks for the environment, website name, static website folder, AWS profile, region, key pair, SSH CIDR, database settings, and a separate WordPress admin login. It packages the static website folder into `.generated/`, writes a local ignored `terraform.tfvars` file, waits for WordPress, and prints the site URLs plus the WordPress admin username and password after deployment.
 
 The default website source is:
 
@@ -96,7 +97,10 @@ terraform apply \
   -var="project_name=aws-wordpress-terraform-platform" \
   -var="db_name=wordpress" \
   -var="db_username=wordpress_user" \
-  -var="db_password=replace-with-a-secure-value"
+  -var="db_password=replace-with-a-secure-db-value" \
+  -var="wp_admin_user=demo_admin" \
+  -var="wp_admin_email=admin@example.com" \
+  -var="wp_admin_password=replace-with-a-separate-wp-admin-value"
 ```
 
 ## Destroying Dev Infrastructure

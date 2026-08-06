@@ -24,6 +24,8 @@ Use one of these safer options:
 
 Do not paste AWS access keys into the guided launcher. The launcher expects an existing AWS CLI profile and verifies it with `aws sts get-caller-identity`.
 
+Keep the WordPress admin password separate from the database password. The database password is for the WordPress application to connect to MySQL or MariaDB; the WordPress admin password is for a person signing in at `/wp-admin/`.
+
 ## Network Security
 
 The MVP allows a public EC2 instance so the first version is easier to test.
@@ -49,6 +51,7 @@ Future production improvements should include:
 
 - Keep WordPress core, themes, and plugins updated.
 - Use strong admin passwords and multi-factor authentication where available.
+- Do not reuse the database password as the WordPress admin password.
 - Install only trusted plugins.
 - Limit file write access where possible.
 - Add web application firewall protection before production.

@@ -65,6 +65,25 @@ variable "db_password" {
   default     = "CHANGE_ME_DO_NOT_USE_IN_PRODUCTION"
 }
 
+variable "wp_admin_user" {
+  description = "WordPress administrator username for browser login."
+  type        = string
+  default     = "demo_admin"
+}
+
+variable "wp_admin_password" {
+  description = "WordPress administrator password for browser login. Keep this separate from the database password."
+  type        = string
+  sensitive   = true
+  default     = "CHANGE_ME_DO_NOT_USE_IN_PRODUCTION"
+}
+
+variable "wp_admin_email" {
+  description = "WordPress administrator email address used during first install."
+  type        = string
+  default     = "admin@example.com"
+}
+
 variable "backup_bucket_name" {
   description = "Globally unique S3 bucket name for dev-rds backups."
   type        = string

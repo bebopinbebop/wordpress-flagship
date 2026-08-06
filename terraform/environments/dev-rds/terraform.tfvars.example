@@ -33,3 +33,11 @@ backup_bucket_name = "replace-with-globally-unique-dev-rds-backup-bucket"
 # Provide this value through an uncommitted terraform.tfvars file,
 # an environment variable, or a secrets manager. Do not put real passwords here.
 # db_password = "replace-with-a-secure-local-only-value"
+
+# This is the username you use at /wp-admin/.
+wp_admin_user = "demo_admin"
+
+wp_admin_email = "admin@example.com"
+
+# Keep this different from db_password.
+# wp_admin_password = "replace-with-a-separate-secure-local-only-value"
