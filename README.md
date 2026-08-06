@@ -2,7 +2,8 @@
 
 ![Project Logo](images/aws_terra_wp.png)
 
-## Intro - Hosting WordPress on AWS resources automatically with Terraform as the IaC.
+## Intro
+## Hosting WordPress on AWS resources automatically with Terraform as the IaC.
 
 This project aims to build a WordPress (WP) project from your terminal onto your AWS account using Terraform-defined resource definitions that coalesce into a logical website.
 
@@ -11,7 +12,7 @@ Terraform was chosen over AWS CloudFormation because Terraform is popular, vendo
 There are three sections to this project that each try and solve a unique problem as described below:
 ![Project Breakdown](images/project-breakdown.png)
 
-## wp-lite
+## wp-lite (Light Version)
 
 **`dev-lite`** is a cost-effective demonstration environment that uses Terraform to deploy a complete WordPress stack (Apache, PHP, MariaDB, and WordPress) on a single EC2 instance within a custom AWS VPC. It's intended for portfolio demonstrations, testing, and rapid deployment while keeping AWS costs to a minimum. See further detail [here](docs/dev-lite-guide.md).
 
