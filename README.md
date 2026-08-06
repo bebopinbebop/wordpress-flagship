@@ -32,7 +32,7 @@ There are three sections to this project that each try and solve a unique proble
 
 ## wp-mig (Migration)
 
-**`dev-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It provisions a production-style AWS environment and provides a repeatable workflow for importing WordPress content, databases, and media into a secure AWS infrastructure. Intended for client migrations, portfolio demonstrations, and freelance engagements, `dev-mig` showcases Infrastructure as Code (IaC), migration automation, and best practices for transitioning WordPress sites with minimal downtime.
+**`dev-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It provisions a production-style AWS environment and provides a repeatable workflow for importing WordPress content, databases, and media into a secure AWS infrastructure. Intended for client migrations, `dev-mig` showcases Infrastructure as Code (IaC), migration automation, and best practices for transitioning WordPress sites with minimal downtime. See further detail [here](docs/dev-mig-guide.md).
 
 - EC2 web server for the migrated WordPress site
 - Amazon RDS MySQL database
