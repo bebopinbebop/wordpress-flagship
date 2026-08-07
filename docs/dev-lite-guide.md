@@ -19,6 +19,29 @@ Guided deployment:
 ./scripts/start-demo.sh
 ```
 
+This will start the first set of queries for the script to begin asking some variable initiliazing for the script to use:
+![init_script](../images/dev-lite/init_script.png)
+
+Once set, the script will start Terraform, scaffolding resouces to then push onto AWS to build. Before doing so, the script will ask if these resources are okay. Type `yes` to conintue:
+![create](../images/dev-lite/create_resources.png)
+
+Then the script will run a while, building AWS resources through the local aws sso account set up before. There will be a heartbeat check on whether the EC2 instance is ready to be visited online:
+![outputs](../images/dev-lite/outputs.png)
+
+And then all the login information, to both the MariaDB and the Wordpress Admin page, with proper endpoint URLs are displayed for you to click through:
+![outputs_final](../images/dev-lite/outputs-final.png)
+
+With the links and login information provided, you can get to the homepage, and also the Wordpress dashboard to start editing your website:
+
+Homepage
+![homepage](../images/dev-lite/homepage.png)
+
+Login Page
+![login](../images/dev-lite/login.png)
+
+Wordpress Dashboard
+![dash](../images/dev-lite/dashboard.png)
+
 When prompted for the database password, remember that this is the hidden MariaDB login WordPress uses internally. When prompted for the WordPress admin password, use a separate password for the `/wp-admin/` browser login.
 
 After the instance finishes bootstrapping:

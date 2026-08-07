@@ -12,6 +12,8 @@ Terraform was chosen over AWS CloudFormation because Terraform is popular, vendo
 There are three sections to this project that each try and solve a unique problem as described below:
 ![Project Breakdown](images/project-breakdown.png)
 
+
+
 ## wp-lite (Light Version)
 
 **`dev-lite`** is a cost-effective demonstration environment that uses Terraform to deploy a complete WordPress stack (Apache, PHP, MariaDB, and WordPress) on a single EC2 instance within a custom AWS VPC. It's intended for portfolio demonstrations, testing, and rapid deployment while keeping AWS costs to a minimum. See further detail [here](docs/dev-lite-guide.md).
@@ -53,11 +55,11 @@ There are three sections to this project that each try and solve a unique proble
 ### Requirements and Tips
 
 There are requirements to make this project work, as described below:
-
+```
  - Shell terminal - this project was built using WSL on Windows 11. This means the project is intended for Debian Linux environments or Zsh. PowerShell is theoretically possible but was not pursued due to the ubiquity of Linux terminals.
  - AWS CLI - you need to install the AWS CLI locally on the machine you wish to push this from. Here is a [link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#:~:text=The%20install%20script%20downloads%2C%20verifies%2C%20and%20installs%20the%20AWS%20CLI%20for%20Linux%20in%20one%20step.%20It%20works%20for%20both%20Linux%20x86%20(64%2Dbit)%20and%20Linux%20ARM%2C%20and%20installs%20for%20the%20current%20user%20by%20default.) to do so.
  - AWS SSO logged in - this project assumes you have an AWS IAM identity logged in as your default account in the AWS CLI. This requires you to have a profile set up in your AWS account's IAM Identity Center that **has the right permissions** to create and destroy resources. Here is a [link](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html#cli-configure-sso-configure) to do so.
-
+```
 
 
 The project supports two beginner-friendly development environments:
