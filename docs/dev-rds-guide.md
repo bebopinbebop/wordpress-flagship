@@ -13,13 +13,13 @@ It creates one EC2 instance for WordPress, one RDS MySQL database in private sub
 
 ## Deploy
 
-Guided deployment:
+Guided deployment is not active yet. The main startup script recognizes `dev-rds` as a future branch and exits before running Terraform.
 
 ```bash
 ./scripts/start-demo.sh
 ```
 
-When prompted for the database password, remember that this is the hidden RDS login WordPress uses internally. When prompted for the WordPress admin password, use a separate password for the `/wp-admin/` browser login.
+When this branch is finalized, the database password will be the hidden RDS login WordPress uses internally. The WordPress admin password should remain a separate password for the `/wp-admin/` browser login.
 
 After the instance finishes bootstrapping:
 

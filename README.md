@@ -25,7 +25,7 @@ There are three sections to this project that each try and solve a unique proble
 
 ## wp-rds (Relational Database Services)
 
-**`dev-rds`** is a production-oriented development environment that uses Terraform to deploy a custom AWS VPC, a WordPress EC2 instance, a private Amazon RDS MySQL database, and an S3 bucket for future backup workflows. This is meant for **Production Level Deployment**, so major costs are rendered on an AWS account. Designed for real-world AWS architecture, it separates the web and database tiers while securing the internal networking, managed database provisioning, and infrastructure automation. The environment provides a live WordPress site with data stored in RDS, making it ideal for migration testing, client hosting demonstrations, and preparing for future production enhancements. See further detail [here](docs/dev-rds-guide.md).
+**`dev-rds`** is a production-oriented development environment that uses Terraform to deploy a custom AWS VPC, a WordPress EC2 instance, a private Amazon RDS MySQL database, and an S3 bucket for future backup workflows. This is meant for **Production Level Deployment**, so major costs are rendered on an AWS account. Designed for real-world AWS architecture, it separates the web and database tiers while securing the internal networking, managed database provisioning, and infrastructure automation. The environment provides a live WordPress site with data stored in RDS, making it ideal for migration testing, client hosting demonstrations, and preparing for future production enhancements. The main startup script recognizes this branch, but the guided `dev-rds` routine will be finalized later. See further detail [here](docs/dev-rds-guide.md).
 
 - Custom VPC with public and private subnets.
 - One EC2 instance in a public subnet.
@@ -35,7 +35,7 @@ There are three sections to this project that each try and solve a unique proble
 
 ## wp-mig (Migration)
 
-**`dev-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It provisions a production-style AWS environment and provides a repeatable workflow for importing WordPress content, databases, and media into a secure AWS infrastructure. Intended for client migrations, `dev-mig` showcases Infrastructure as Code (IaC), migration automation, and best practices for transitioning WordPress sites with minimal downtime. See further detail [here](docs/dev-mig-guide.md).
+**`dev-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It is currently a placeholder branch for a future production-style AWS environment and a repeatable workflow for importing WordPress content, databases, and media into secure AWS infrastructure. Intended for client migrations, `dev-mig` will showcase Infrastructure as Code (IaC), migration automation, and best practices for transitioning WordPress sites with minimal downtime. See further detail [here](docs/dev-mig-guide.md).
 
 - EC2 web server for the migrated WordPress site
 - Amazon RDS MySQL database
@@ -55,19 +55,25 @@ There are three sections to this project that each try and solve a unique proble
 ### Requirements and Tips
 
 There are requirements to make this project work, as described below:
-```
+
  - Shell terminal - this project was built using WSL on Windows 11. This means the project is intended for Debian Linux environments or Zsh. PowerShell is theoretically possible but was not pursued due to the ubiquity of Linux terminals.
  - AWS CLI - you need to install the AWS CLI locally on the machine you wish to push this from. Here is a [link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#:~:text=The%20install%20script%20downloads%2C%20verifies%2C%20and%20installs%20the%20AWS%20CLI%20for%20Linux%20in%20one%20step.%20It%20works%20for%20both%20Linux%20x86%20(64%2Dbit)%20and%20Linux%20ARM%2C%20and%20installs%20for%20the%20current%20user%20by%20default.) to do so.
  - AWS SSO logged in - this project assumes you have an AWS IAM identity logged in as your default account in the AWS CLI. This requires you to have a profile set up in your AWS account's IAM Identity Center that **has the right permissions** to create and destroy resources. Here is a [link](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html#cli-configure-sso-configure) to do so.
-```
+
+ `openssl` - used to generate random passwords for the MariaDB or WordPress admin login
+ `curl` - used to check on the WordPress EC2 Instance to poll whether the site is live
+ `zip` - used by Terraform to push any local website folder to the EC2 for unpacking if you wish to push your own files rather than using the default splash page
+ `terraform` - used to architect a backend for AWS to then construct the necessary resources in the cloud
 
 
-The project supports two beginner-friendly development environments:
+
+The project supports three beginner-friendly development tracks:
 
 - `dev-lite`: one EC2 instance with WordPress and MariaDB installed locally. This is the cheapest demo path and is intended to be destroyed after use.
 - `dev-rds`: one EC2 instance running WordPress, with RDS MySQL in private subnets and an S3 bucket reserved for backups.
+- `dev-mig`: a placeholder migration branch for future client rehosting workflows.
 
-Both development environments intentionally avoid NAT Gateway, Load Balancer, and CloudFront in the first MVP to keep costs and complexity low.
+The active `dev-lite` environment intentionally avoids NAT Gateway, Load Balancer, and CloudFront in the first MVP to keep costs and complexity low.
 
 The deployed site uses WordPress as the main editable website:
 
@@ -81,7 +87,7 @@ The deployed site uses WordPress as the main editable website:
 
 - Build a repeatable WordPress infrastructure using Terraform.
 - Keep networking, security, compute, database, and storage concerns separated into modules.
-- Support separate `dev-lite`, `dev-rds`, and `prod` environments.
+- Support separate `dev-lite`, `dev-rds`, `dev-mig`, and `prod` environments.
 - Use placeholder variables for sensitive values and never commit real secrets.
 - Start with simple EC2-based MVPs, then evolve toward HTTPS, domains, backups, monitoring, and production automation.
 
@@ -106,6 +112,7 @@ The deployed site uses WordPress as the main editable website:
 ├── docs/
 │   ├── cost-control.md
 │   ├── cost-estimate.md
+│   ├── dev-mig-guide.md
 │   ├── dev-lite-guide.md
 │   ├── dev-rds-guide.md
 │   ├── deployment-guide.md
@@ -113,6 +120,7 @@ The deployed site uses WordPress as the main editable website:
 │   ├── portfolio-case-study.md
 │   └── security.md
 ├── scripts/
+│   ├── check-migration-readiness.sh
 │   ├── destroy-stack.sh
 │   ├── diagnose-dev-lite.sh
 │   ├── install-terraform.sh
@@ -128,6 +136,7 @@ The deployed site uses WordPress as the main editable website:
 └── terraform/
     ├── environments/
     │   ├── dev-lite/
+    │   ├── dev-mig/
     │   ├── dev-rds/
     │   └── prod/
     └── modules/
@@ -143,7 +152,8 @@ The deployed site uses WordPress as the main editable website:
 ### Phase 1: Development MVPs
 
 - Deploy `dev-lite` for low-cost single-instance demos.
-- Deploy `dev-rds` for a more realistic EC2 + RDS architecture.
+- Reserve `dev-rds` for a more realistic EC2 + RDS architecture.
+- Reserve `dev-mig` for future migration and rehosting workflows.
 - Seed demo WordPress content with WP-CLI.
 - Document deployment, security, and cost controls.
 

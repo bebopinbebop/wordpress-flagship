@@ -11,6 +11,8 @@ It creates one EC2 instance and installs both WordPress and MariaDB on that same
 - Practicing Terraform workflows.
 - Testing WordPress bootstrap scripts.
 
+## You can add your own domain in the backend so that it has a proper site domain
+
 ## Deploy
 
 Guided deployment:
@@ -18,6 +20,8 @@ Guided deployment:
 ```bash
 ./scripts/start-demo.sh
 ```
+
+Choose `dev-lite` when the launcher asks for the environment. Before Terraform runs, the script checks that required local tools are installed, the AWS profile is authenticated, the EC2 key pair exists in the selected region, and the static demo site folder is usable.
 
 This will start the first set of queries for the script to begin asking some variable initiliazing for the script to use:
 ![init_script](../images/dev-lite/init_script.png)
@@ -43,6 +47,8 @@ Wordpress Dashboard
 ![dash](../images/dev-lite/dashboard.png)
 
 When prompted for the database password, remember that this is the hidden MariaDB login WordPress uses internally. When prompted for the WordPress admin password, use a separate password for the `/wp-admin/` browser login.
+
+After the site is live, the WordPress admin password can be changed from the WordPress dashboard.
 
 After the instance finishes bootstrapping:
 
