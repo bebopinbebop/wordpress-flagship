@@ -11,29 +11,27 @@ ENV_ROOT="$ROOT_DIR/terraform/environments"
 
 AWS_PROFILE_NAME="${AWS_PROFILE:-default}"
 AWS_REGION="us-east-1"
-TARGET_ENVIRONMENT="dev-lite"
+TARGET_ENVIRONMENT="wp-lite"
 AUTO_APPROVE="false"
 SCAN_ONLY="false"
-INCLUDE_PROD="false"
 
 usage() {
   cat <<USAGE
 Usage: ./scripts/destroy-stack.sh [options]
 
 Options:
-  --env ENV          Environment to destroy: dev-lite, dev-rds, prod, or all.
-                     Default: dev-lite.
+  --env ENV          Environment to destroy: wp-lite, wp-rds, or all.
+                     Default: wp-lite.
   --profile NAME    AWS CLI profile to use. Default: AWS_PROFILE or default.
   --region REGION   AWS region to scan. Default: us-east-1.
   --yes             Skip confirmation prompts for Terraform destroy.
   --scan-only       Only scan AWS and Terraform state. Do not destroy anything.
-  --include-prod    Allow prod cleanup when --env prod or --env all is used.
   -h, --help        Show this help.
 
 Examples:
-  ./scripts/destroy-stack.sh --env dev-lite
-  ./scripts/destroy-stack.sh --env dev-rds --profile my-sso
-  ./scripts/destroy-stack.sh --env all --include-prod
+  ./scripts/destroy-stack.sh --env wp-lite
+  ./scripts/destroy-stack.sh --env wp-rds --profile my-sso
+  ./scripts/destroy-stack.sh --env all
   ./scripts/destroy-stack.sh --scan-only --profile my-sso
 USAGE
 }
@@ -77,9 +75,8 @@ project_name_for_env() {
   fi
 
   case "$env_name" in
-    dev-lite) echo "wordpress-dev-lite" ;;
-    dev-rds) echo "wordpress-dev-rds" ;;
-    prod) echo "aws-wordpress-prod" ;;
+    wp-lite) echo "wordpress-wp-lite" ;;
+    wp-rds) echo "wordpress-wp-rds" ;;
     *) echo "$env_name" ;;
   esac
 }
@@ -88,10 +85,10 @@ validate_environment() {
   local env_name="$1"
 
   case "$env_name" in
-    dev-lite|dev-rds|prod|all) ;;
+    wp-lite|wp-rds|all) ;;
     *)
       echo "Unknown environment: $env_name"
-      echo "Use dev-lite, dev-rds, prod, or all."
+      echo "Use wp-lite, wp-rds, or all."
       exit 1
       ;;
   esac
@@ -99,20 +96,9 @@ validate_environment() {
 
 environments_to_process() {
   if [ "$TARGET_ENVIRONMENT" = "all" ]; then
-    if [ "$INCLUDE_PROD" = "true" ]; then
-      echo "dev-lite dev-rds prod"
-    else
-      echo "dev-lite dev-rds"
-    fi
+    echo "wp-lite wp-rds"
   else
     echo "$TARGET_ENVIRONMENT"
-  fi
-}
-
-confirm_prod_allowed() {
-  if [ "$TARGET_ENVIRONMENT" = "prod" ] && [ "$INCLUDE_PROD" != "true" ]; then
-    echo "Refusing to target prod without --include-prod."
-    exit 1
   fi
 }
 
@@ -177,8 +163,8 @@ scan_project_resources() {
   cat /tmp/wordpress-flagship-lbs.txt
 
   echo
-  echo "S3 buckets are global. Check this project bucket name if dev-rds was used:"
-  local env_dir="$ENV_ROOT/dev-rds"
+  echo "S3 buckets are global. Check this project bucket name if wp-rds was used:"
+  local env_dir="$ENV_ROOT/wp-rds"
   local bucket_name
   bucket_name="$(read_tfvar "$env_dir" "backup_bucket_name")"
   if [ -n "$bucket_name" ]; then
@@ -186,7 +172,7 @@ scan_project_resources() {
       && echo "Found S3 bucket: $bucket_name" \
       || echo "No accessible S3 bucket found named: $bucket_name"
   else
-    echo "No local dev-rds backup_bucket_name found in terraform.tfvars."
+    echo "No local wp-rds backup_bucket_name found in terraform.tfvars."
   fi
 }
 
@@ -271,10 +257,6 @@ while [ "$#" -gt 0 ]; do
       SCAN_ONLY="true"
       shift
       ;;
-    --include-prod)
-      INCLUDE_PROD="true"
-      shift
-      ;;
     -h|--help)
       usage
       exit 0
@@ -288,7 +270,6 @@ while [ "$#" -gt 0 ]; do
 done
 
 validate_environment "$TARGET_ENVIRONMENT"
-confirm_prod_allowed
 require_command terraform
 require_command aws
 check_aws_auth
@@ -306,4 +287,3 @@ echo
 echo "Cleanup script finished."
 echo "Run a final scan if you want to verify remaining tagged resources:"
 echo "  ./scripts/destroy-stack.sh --scan-only --profile $AWS_PROFILE_NAME --region $AWS_REGION"
-

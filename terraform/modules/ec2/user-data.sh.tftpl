@@ -29,7 +29,7 @@ apt-get install -y apache2 mysql-client unzip curl rsync \
   php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip
 
 if [ "$${INSTALL_MODE}" = "local-db" ]; then
-  echo "Installing local MariaDB for dev-lite..."
+  echo "Installing local MariaDB for wp-lite..."
   apt-get install -y mariadb-server
   systemctl enable mariadb
   systemctl start mariadb

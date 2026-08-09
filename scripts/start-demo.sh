@@ -131,19 +131,19 @@ choose_environment() {
   local selected_environment
 
   echo "Choose a demo path:"
-  echo "  dev-lite  - active low-cost EC2 + local MariaDB demo"
-  echo "  dev-rds   - reserved for the future RDS production-track workflow"
-  echo "  dev-mig   - reserved for the future WordPress migration workflow"
+  echo "  wp-lite  - active low-cost EC2 + local MariaDB demo"
+  echo "  wp-rds   - reserved for the future RDS production-track workflow"
+  echo "  wp-mig   - reserved for the future WordPress migration workflow"
   echo
 
-  selected_environment="$(prompt_default "Environment: dev-lite, dev-rds, or dev-mig" "dev-lite")"
+  selected_environment="$(prompt_default "Environment: wp-lite, wp-rds, or wp-mig" "wp-lite")"
 
   case "$selected_environment" in
-    dev-lite | dev-rds | dev-mig)
+    wp-lite | wp-rds | wp-mig)
       ENVIRONMENT="$selected_environment"
       ;;
     *)
-      echo "Environment must be dev-lite, dev-rds, or dev-mig." >&2
+      echo "Environment must be wp-lite, wp-rds, or wp-mig." >&2
       exit 1
       ;;
   esac
@@ -155,9 +155,9 @@ explain_reserved_environment() {
   echo
   echo "The $environment branch is recognized, but it is not active yet."
 
-  if [ "$environment" = "dev-rds" ]; then
+  if [ "$environment" = "wp-rds" ]; then
     echo "Planned purpose: build the future production-track WordPress architecture with EC2, RDS MySQL, and S3 backups."
-    echo "Current recommendation: use dev-lite while the RDS workflow is being finalized."
+    echo "Current recommendation: use wp-lite while the RDS workflow is being finalized."
   else
     echo "Planned purpose: prepare future WordPress migration and rehosting workflows."
     echo "Current recommendation: run ./scripts/prepare-migration.sh or ./scripts/check-migration-readiness.sh for migration planning."
@@ -167,12 +167,12 @@ explain_reserved_environment() {
   echo "No Terraform was initialized, planned, applied, or destroyed."
 }
 
-run_dev_lite_preflight() {
+run_wp_lite_preflight() {
   local aws_identity
   local ssh_confirm
 
   echo
-  echo "Running dev-lite AWS and project preflight checks..."
+  echo "Running wp-lite AWS and project preflight checks..."
 
   if [ ! -d "$ENV_DIR" ]; then
     echo "Environment directory does not exist: $ENV_DIR"
@@ -232,11 +232,11 @@ run_dev_lite_preflight() {
     fi
   fi
 
-  echo "${GREEN}[ok]${RESET} dev-lite AWS and project preflight checks passed"
+  echo "${GREEN}[ok]${RESET} wp-lite AWS and project preflight checks passed"
 }
 
-deploy_dev_lite() {
-  local environment="dev-lite"
+deploy_wp_lite() {
+  local environment="wp-lite"
 
   echo "The default flow uses WordPress at / and the static demo site at /demo/."
   echo
@@ -256,14 +256,14 @@ deploy_dev_lite() {
   ENV_DIR="$ROOT_DIR/terraform/environments/$environment"
   TFVARS_FILE="$ENV_DIR/terraform.tfvars"
 
-  run_dev_lite_preflight
+  run_wp_lite_preflight
 
   PROJECT_SLUG="$(slugify "$SITE_TITLE")"
   if [ -z "$PROJECT_SLUG" ]; then
     PROJECT_SLUG="wordpress-demo"
   fi
 
-  PROJECT_NAME="$(prompt_default "Terraform project/resource name" "wp-${environment}-${PROJECT_SLUG}")"
+  PROJECT_NAME="$(prompt_default "Terraform project/resource name" "${environment}-${PROJECT_SLUG}")"
   DB_NAME="$(prompt_default "WordPress database name" "wordpress")"
   DB_USERNAME="$(prompt_default "WordPress database username" "wordpress_user")"
   WP_ADMIN_USER="$(prompt_default "WordPress admin username" "demo_admin")"
@@ -352,10 +352,10 @@ run_local_preflight
 choose_environment
 
 case "$ENVIRONMENT" in
-  dev-lite)
-    deploy_dev_lite
+  wp-lite)
+    deploy_wp_lite
     ;;
-  dev-rds | dev-mig)
+  wp-rds | wp-mig)
     explain_reserved_environment "$ENVIRONMENT"
     ;;
 esac

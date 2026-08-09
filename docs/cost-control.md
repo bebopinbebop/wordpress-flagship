@@ -2,9 +2,9 @@
 
 This project intentionally separates low-cost demos from more realistic development.
 
-## dev-lite
+## wp-lite
 
-`dev-lite` is the cheapest option because it uses one EC2 instance for both WordPress and MariaDB.
+`wp-lite` is the cheapest option because it uses one EC2 instance for both WordPress and MariaDB.
 
 Cost controls:
 
@@ -13,9 +13,9 @@ Cost controls:
 - Avoid large EBS volumes.
 - Do not add NAT Gateway, Load Balancer, or CloudFront for this mode.
 
-## dev-rds
+## wp-rds
 
-`dev-rds` costs more because RDS runs separately from EC2.
+`wp-rds` costs more because RDS runs separately from EC2.
 
 Cost controls:
 
@@ -37,7 +37,7 @@ Cost controls:
 Use the cleanup helper to destroy Terraform-managed demo resources:
 
 ```bash
-./scripts/destroy-stack.sh --env dev-lite --profile your-profile-name
+./scripts/destroy-stack.sh --env wp-lite --profile your-profile-name
 ```
 
 Use scan-only mode before or after cleanup:

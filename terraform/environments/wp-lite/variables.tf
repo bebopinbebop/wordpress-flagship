@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region where prod resources will be created."
+  description = "AWS region where wp-lite resources will be created."
   type        = string
   default     = "us-east-1"
 }
@@ -7,25 +7,25 @@ variable "aws_region" {
 variable "project_name" {
   description = "Name used to tag and name AWS resources."
   type        = string
-  default     = "aws-wordpress-prod"
+  default     = "wordpress-wp-lite"
 }
 
 variable "vpc_cidr" {
   description = "CIDR block for the custom VPC."
   type        = string
-  default     = "10.20.0.0/16"
+  default     = "10.30.0.0/16"
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed to SSH into the WordPress instance. Replace with a trusted admin IP range."
+  description = "CIDR block allowed to SSH into the instance. Replace with your own IP range."
   type        = string
   default     = "0.0.0.0/0"
 }
 
 variable "instance_type" {
-  description = "EC2 instance size for the WordPress server."
+  description = "Small EC2 instance size for low-cost demos."
   type        = string
-  default     = "t3.small"
+  default     = "t3.micro"
 }
 
 variable "key_name" {
@@ -47,19 +47,19 @@ variable "site_archive_path" {
 }
 
 variable "db_name" {
-  description = "Initial MySQL database name for WordPress."
+  description = "Local MariaDB database name for WordPress."
   type        = string
   default     = "wordpress"
 }
 
 variable "db_username" {
-  description = "Initial MySQL username for WordPress."
+  description = "Local MariaDB username for WordPress."
   type        = string
   default     = "wordpress_user"
 }
 
 variable "db_password" {
-  description = "Initial MySQL password. Provide a real value outside Git."
+  description = "Local MariaDB password. Provide a real value outside Git."
   type        = string
   sensitive   = true
   default     = "CHANGE_ME_DO_NOT_USE_IN_PRODUCTION"
@@ -68,7 +68,7 @@ variable "db_password" {
 variable "wp_admin_user" {
   description = "WordPress administrator username for browser login."
   type        = string
-  default     = "site_admin"
+  default     = "demo_admin"
 }
 
 variable "wp_admin_password" {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Installs WordPress and MariaDB on the same Ubuntu server.
-# This matches dev-lite: low cost, easy demos, and no RDS.
+# This matches wp-lite: low cost, easy demos, and no RDS.
 
 set -euo pipefail
 
@@ -47,5 +47,5 @@ sudo sed -i "s/localhost/localhost/" /var/www/html/wp-config.php
 
 sudo systemctl restart apache2
 
-echo "WordPress dev-lite install is ready at ${SITE_URL}."
+echo "WordPress wp-lite install is ready at ${SITE_URL}."
 

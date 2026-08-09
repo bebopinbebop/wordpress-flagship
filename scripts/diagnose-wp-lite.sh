@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-# Safe diagnostic helper for an existing dev-lite deployment.
+# Safe diagnostic helper for an existing wp-lite deployment.
 # It reads Terraform outputs and AWS metadata, but it does not destroy resources.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_DIR="$ROOT_DIR/terraform/environments/dev-lite"
+ENV_DIR="$ROOT_DIR/terraform/environments/wp-lite"
 AWS_PROFILE_NAME="${AWS_PROFILE:-default}"
 
-echo "Diagnosing dev-lite using AWS profile: $AWS_PROFILE_NAME"
+echo "Diagnosing wp-lite using AWS profile: $AWS_PROFILE_NAME"
 echo
 
 cd "$ENV_DIR"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Installs WordPress on Ubuntu and connects it to an RDS MySQL database.
-# This matches dev-rds: EC2 for WordPress, RDS for MySQL.
+# This matches wp-rds: EC2 for WordPress, RDS for MySQL.
 
 set -euo pipefail
 
@@ -42,5 +42,5 @@ sudo sed -i "s/localhost/${DB_HOST}/" /var/www/html/wp-config.php
 
 sudo systemctl restart apache2
 
-echo "WordPress dev-rds install is ready at ${SITE_URL}."
+echo "WordPress wp-rds install is ready at ${SITE_URL}."
 

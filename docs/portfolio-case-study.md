@@ -8,8 +8,8 @@ A small business or freelancer needs a repeatable WordPress hosting setup on AWS
 
 This project provides two Terraform-managed development environments:
 
-- `dev-lite` runs WordPress and MariaDB on one EC2 instance for low-cost demos.
-- `dev-rds` runs WordPress on EC2 and MySQL on private RDS subnets for a more realistic client architecture.
+- `wp-lite` runs WordPress and MariaDB on one EC2 instance for low-cost demos.
+- `wp-rds` runs WordPress on EC2 and MySQL on private RDS subnets for a more realistic client architecture.
 
 Both environments use reusable Terraform modules for VPC, security groups, EC2, RDS, and S3.
 
@@ -32,7 +32,7 @@ The deployed site uses WordPress as the main editable website at `/`, while the 
 
 - Real secrets are not committed.
 - Local `terraform.tfvars` files are ignored by Git.
-- RDS is placed in private subnets for `dev-rds`.
+- RDS is placed in private subnets for `wp-rds`.
 - MySQL access is limited to the WordPress EC2 security group.
 - SSH access is configurable with `allowed_ssh_cidr`.
 

@@ -1,6 +1,6 @@
-# dev-rds Guide
+# wp-rds Guide
 
-`dev-rds` is the more realistic development environment.
+`wp-rds` is the more realistic development environment.
 
 It creates one EC2 instance for WordPress, one RDS MySQL database in private subnets, and one S3 bucket reserved for backups. It does not include NAT Gateway, Load Balancer, or CloudFront yet.
 
@@ -13,7 +13,7 @@ It creates one EC2 instance for WordPress, one RDS MySQL database in private sub
 
 ## Deploy
 
-Guided deployment is not active yet. The main startup script recognizes `dev-rds` as a future branch and exits before running Terraform.
+Guided deployment is not active yet. The main startup script recognizes `wp-rds` as a future branch and exits before running Terraform.
 
 ```bash
 ./scripts/start-demo.sh
@@ -30,7 +30,7 @@ After the instance finishes bootstrapping:
 Manual deployment:
 
 ```bash
-cd terraform/environments/dev-rds
+cd terraform/environments/wp-rds
 terraform init
 terraform plan
 terraform apply
@@ -53,4 +53,4 @@ ssh ubuntu@your-instance-public-dns "chmod +x /tmp/seed-wordpress.sh && sudo SIT
 terraform destroy
 ```
 
-The dev-rds environment costs more than dev-lite because RDS runs as a separate managed database.
+The wp-rds environment costs more than wp-lite because RDS runs as a separate managed database.

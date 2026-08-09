@@ -1,8 +1,8 @@
-# Example planning values for the future dev-mig environment.
+# Example planning values for the future wp-mig environment.
 # This file is not used by deployable Terraform code yet.
 # Do not store client data, real domains under NDA, passwords, or exports here.
 
 # aws_region = "us-east-1"
-# project_name = "wordpress-dev-mig"
+# project_name = "wordpress-wp-mig"
 # source_domain = "example.com"
 # target_domain = "migration-target.example.com"

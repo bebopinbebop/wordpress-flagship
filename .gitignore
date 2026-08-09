@@ -35,3 +35,6 @@ Thumbs.db
 
 # Generated deployment bundles
 .generated/
+
+# Local learning notes
+CI_LEARNING_NOTES.md

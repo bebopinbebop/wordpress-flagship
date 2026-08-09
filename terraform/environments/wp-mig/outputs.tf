@@ -1,4 +1,4 @@
-# Placeholder outputs for the future dev-mig environment.
+# Placeholder outputs for the future wp-mig environment.
 #
 # Expected future outputs:
 # - wordpress_url

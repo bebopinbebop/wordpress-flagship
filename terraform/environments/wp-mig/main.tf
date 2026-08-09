@@ -1,4 +1,4 @@
-# Placeholder Terraform file for the future dev-mig environment.
+# Placeholder Terraform file for the future wp-mig environment.
 #
 # This environment is reserved for migration/rehosting workflows. It should not
 # create AWS resources until the migration architecture is intentionally designed.

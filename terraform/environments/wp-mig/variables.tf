@@ -1,4 +1,4 @@
-# Placeholder variables for the future dev-mig environment.
+# Placeholder variables for the future wp-mig environment.
 #
 # These are documented here as planning notes only. They are commented out so
 # this environment stays non-deployable until the migration workflow is ready.
@@ -12,7 +12,7 @@
 # variable "project_name" {
 #   description = "Name used to tag migration resources."
 #   type        = string
-#   default     = "wordpress-dev-mig"
+#   default     = "wordpress-wp-mig"
 # }
 
 # variable "source_domain" {

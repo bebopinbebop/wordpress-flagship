@@ -32,7 +32,7 @@ check_command unzip
 echo
 echo "Project folders:"
 echo "[ok] Migration guide: $ROOT_DIR/docs/migration-guide.md"
-echo "[ok] dev-mig scaffold: $ROOT_DIR/terraform/environments/dev-mig"
+echo "[ok] wp-mig scaffold: $ROOT_DIR/terraform/environments/wp-mig"
 echo "[ok] Generated migration plans: $ROOT_DIR/.generated/migrations"
 echo
 echo "Next planning step:"

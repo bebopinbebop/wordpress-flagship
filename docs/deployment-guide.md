@@ -25,10 +25,9 @@ Do not commit:
 
 ## Environment Layout
 
-- `terraform/environments/dev-lite` is for the lowest-cost demos with WordPress and MariaDB on one EC2 instance.
-- `terraform/environments/dev-rds` is for testing WordPress on EC2 with RDS MySQL in private subnets. The guided startup branch is recognized but not active yet.
-- `terraform/environments/dev-mig` is a placeholder for future migration and rehosting workflows.
-- `terraform/environments/prod` is for production-like configuration.
+- `terraform/environments/wp-lite` is for the lowest-cost demos with WordPress and MariaDB on one EC2 instance.
+- `terraform/environments/wp-rds` is for testing WordPress on EC2 with RDS MySQL in private subnets. The guided startup branch is recognized but not active yet.
+- `terraform/environments/wp-mig` is a placeholder for future migration and rehosting workflows.
 - Shared infrastructure logic lives in `terraform/modules`.
 
 ## MVP Deployment Flow
@@ -39,9 +38,9 @@ The easiest demo path is the guided launcher:
 ./scripts/start-demo.sh
 ```
 
-The launcher asks which environment path to use: `dev-lite`, `dev-rds`, or `dev-mig`. Currently, only `dev-lite` continues into Terraform deployment. The `dev-rds` and `dev-mig` branches are recognized and exit with planning guidance until their routines are finalized.
+The launcher asks which environment path to use: `wp-lite`, `wp-rds`, or `wp-mig`. Currently, only `wp-lite` continues into Terraform deployment. The `wp-rds` and `wp-mig` branches are recognized and exit with planning guidance until their routines are finalized.
 
-For `dev-lite`, the launcher asks for the website name, static website folder, AWS profile, region, key pair, SSH CIDR, database settings, and a separate WordPress admin login. It packages the static website folder into `.generated/`, writes a local ignored `terraform.tfvars` file, waits for WordPress, and prints the site URLs plus the WordPress admin username and password after deployment.
+For `wp-lite`, the launcher asks for the website name, static website folder, AWS profile, region, key pair, SSH CIDR, database settings, and a separate WordPress admin login. It packages the static website folder into `.generated/`, writes a local ignored `terraform.tfvars` file, waits for WordPress, and prints the site URLs plus the WordPress admin username and password after deployment.
 
 The default website source is:
 
@@ -70,7 +69,7 @@ aws sso login --profile your-profile-name
 3. Initialize Terraform.
 
 ```bash
-cd terraform/environments/dev-lite
+cd terraform/environments/wp-lite
 terraform init
 ```
 

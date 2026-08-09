@@ -31,7 +31,7 @@ echo
 
 CLIENT_NAME="$(prompt_default "Client or project name" "sample-client")"
 CURRENT_DOMAIN="$(prompt_default "Current domain" "example.com")"
-TARGET_ENV="$(prompt_default "Target environment" "dev-rds")"
+TARGET_ENV="$(prompt_default "Target environment" "wp-rds")"
 PROJECT_SLUG="$(slugify "$CLIENT_NAME")"
 
 mkdir -p "$OUTPUT_DIR"

@@ -14,8 +14,8 @@ Terraform is excellent for creating the new AWS hosting environment. WordPress m
 
 2. Build Target AWS Environment
 
-- Use `dev-lite` for demos or very small low-cost sites.
-- Use `dev-rds` or a production environment for client-like separation of web and database tiers.
+- Use `wp-lite` for demos or very small low-cost sites.
+- Use `wp-rds` or a production environment for client-like separation of web and database tiers.
 - Confirm security groups, backups, and cost expectations before migration.
 
 3. Export Existing WordPress Site

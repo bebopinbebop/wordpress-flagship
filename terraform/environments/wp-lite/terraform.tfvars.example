@@ -1,12 +1,12 @@
-# Example values for the dev-rds environment.
+# Example values for the wp-lite environment.
 # Copy this file to terraform.tfvars for local use, then replace placeholders.
 # Do not commit terraform.tfvars or any real secrets.
 
 aws_region = "us-east-1"
 
-project_name = "wordpress-dev-rds"
+project_name = "wordpress-wp-lite"
 
-vpc_cidr = "10.40.0.0/16"
+vpc_cidr = "10.30.0.0/16"
 
 # Replace with your own public IP range before using SSH.
 # Example format: "203.0.113.10/32"
@@ -21,14 +21,11 @@ site_title = "Cloud WordPress Demo"
 
 # Created automatically by scripts/start-demo.sh.
 # The zip should contain index.html at the root.
-site_archive_path = "../../../.generated/dev-rds-cloud-wordpress-demo-site.zip"
+site_archive_path = "../../../.generated/wp-lite-cloud-wordpress-demo-site.zip"
 
 db_name = "wordpress"
 
 db_username = "wordpress_user"
-
-# S3 bucket names must be globally unique.
-backup_bucket_name = "replace-with-globally-unique-dev-rds-backup-bucket"
 
 # Provide this value through an uncommitted terraform.tfvars file,
 # an environment variable, or a secrets manager. Do not put real passwords here.

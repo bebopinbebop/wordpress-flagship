@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region where dev-lite resources will be created."
+  description = "AWS region where wp-rds resources will be created."
   type        = string
   default     = "us-east-1"
 }
@@ -7,13 +7,13 @@ variable "aws_region" {
 variable "project_name" {
   description = "Name used to tag and name AWS resources."
   type        = string
-  default     = "wordpress-dev-lite"
+  default     = "wordpress-wp-rds"
 }
 
 variable "vpc_cidr" {
   description = "CIDR block for the custom VPC."
   type        = string
-  default     = "10.30.0.0/16"
+  default     = "10.40.0.0/16"
 }
 
 variable "allowed_ssh_cidr" {
@@ -23,7 +23,7 @@ variable "allowed_ssh_cidr" {
 }
 
 variable "instance_type" {
-  description = "Small EC2 instance size for low-cost demos."
+  description = "EC2 instance size for the WordPress server."
   type        = string
   default     = "t3.micro"
 }
@@ -47,19 +47,19 @@ variable "site_archive_path" {
 }
 
 variable "db_name" {
-  description = "Local MariaDB database name for WordPress."
+  description = "Initial RDS MySQL database name for WordPress."
   type        = string
   default     = "wordpress"
 }
 
 variable "db_username" {
-  description = "Local MariaDB username for WordPress."
+  description = "Initial RDS MySQL username for WordPress."
   type        = string
   default     = "wordpress_user"
 }
 
 variable "db_password" {
-  description = "Local MariaDB password. Provide a real value outside Git."
+  description = "Initial RDS MySQL password. Provide a real value outside Git."
   type        = string
   sensitive   = true
   default     = "CHANGE_ME_DO_NOT_USE_IN_PRODUCTION"
@@ -82,4 +82,10 @@ variable "wp_admin_email" {
   description = "WordPress administrator email address used during first install."
   type        = string
   default     = "admin@example.com"
+}
+
+variable "backup_bucket_name" {
+  description = "Globally unique S3 bucket name for wp-rds backups."
+  type        = string
+  default     = "replace-with-globally-unique-wp-rds-backup-bucket"
 }

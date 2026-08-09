@@ -24,7 +24,7 @@ variable "key_name" {
 }
 
 variable "install_mode" {
-  description = "WordPress install mode. Use local-db for dev-lite or rds for dev-rds."
+  description = "WordPress install mode. Use local-db for wp-lite or rds for wp-rds."
   type        = string
   default     = "rds"
 

@@ -1,6 +1,6 @@
-# dev-lite Guide
+# wp-lite Guide
 
-`dev-lite` is the low-cost demo environment.
+`wp-lite` is the low-cost demo environment.
 
 It creates one EC2 instance and installs both WordPress and MariaDB on that same instance. It does not create RDS, NAT Gateway, Load Balancer, or CloudFront.
 
@@ -21,30 +21,30 @@ Guided deployment:
 ./scripts/start-demo.sh
 ```
 
-Choose `dev-lite` when the launcher asks for the environment. Before Terraform runs, the script checks that required local tools are installed, the AWS profile is authenticated, the EC2 key pair exists in the selected region, and the static demo site folder is usable.
+Choose `wp-lite` when the launcher asks for the environment. Before Terraform runs, the script checks that required local tools are installed, the AWS profile is authenticated, the EC2 key pair exists in the selected region, and the static demo site folder is usable.
 
 This will start the first set of queries for the script to begin asking some variable initiliazing for the script to use:
-![init_script](../images/dev-lite/init_script.png)
+![init_script](../images/wp-lite/init_script.png)
 
 Once set, the script will start Terraform, scaffolding resouces to then push onto AWS to build. Before doing so, the script will ask if these resources are okay. Type `yes` to conintue:
-![create](../images/dev-lite/create_resources.png)
+![create](../images/wp-lite/create_resources.png)
 
 Then the script will run a while, building AWS resources through the local aws sso account set up before. There will be a heartbeat check on whether the EC2 instance is ready to be visited online:
-![outputs](../images/dev-lite/outputs.png)
+![outputs](../images/wp-lite/outputs.png)
 
 And then all the login information, to both the MariaDB and the Wordpress Admin page, with proper endpoint URLs are displayed for you to click through:
-![outputs_final](../images/dev-lite/outputs-final.png)
+![outputs_final](../images/wp-lite/outputs-final.png)
 
 With the links and login information provided, you can get to the homepage, and also the Wordpress dashboard to start editing your website:
 
 Homepage
-![homepage](../images/dev-lite/homepage.png)
+![homepage](../images/wp-lite/homepage.png)
 
 Login Page
-![login](../images/dev-lite/login.png)
+![login](../images/wp-lite/login.png)
 
 Wordpress Dashboard
-![dash](../images/dev-lite/dashboard.png)
+![dash](../images/wp-lite/dashboard.png)
 
 When prompted for the database password, remember that this is the hidden MariaDB login WordPress uses internally. When prompted for the WordPress admin password, use a separate password for the `/wp-admin/` browser login.
 
@@ -59,7 +59,7 @@ After the instance finishes bootstrapping:
 Manual deployment:
 
 ```bash
-cd terraform/environments/dev-lite
+cd terraform/environments/wp-lite
 terraform init
 terraform plan
 terraform apply

@@ -13,8 +13,8 @@ provider "aws" {
   region = var.aws_region
 }
 
-# dev-lite is the lowest-cost demo environment.
-# It creates one EC2 instance and installs both WordPress and MariaDB locally.
+# wp-rds is the more realistic development environment.
+# It keeps WordPress on EC2 and moves MySQL into RDS private subnets.
 module "vpc" {
   source = "../../modules/vpc"
 
@@ -30,6 +30,25 @@ module "security" {
   allowed_ssh_cidr = var.allowed_ssh_cidr
 }
 
+module "rds" {
+  source = "../../modules/rds"
+
+  project_name        = var.project_name
+  private_subnet_ids  = module.vpc.private_subnet_ids
+  database_sg_id      = module.security.database_sg_id
+  db_name             = var.db_name
+  db_username         = var.db_username
+  db_password         = var.db_password
+  skip_final_snapshot = true
+}
+
+module "backup_bucket" {
+  source = "../../modules/s3"
+
+  project_name = var.project_name
+  bucket_name  = var.backup_bucket_name
+}
+
 module "ec2" {
   source = "../../modules/ec2"
 
@@ -38,7 +57,7 @@ module "ec2" {
   wordpress_sg_id  = module.security.wordpress_sg_id
   instance_type    = var.instance_type
   key_name         = var.key_name
-  install_mode     = "local-db"
+  install_mode     = "rds"
   site_title       = var.site_title
   site_archive_base64 = (
     var.site_archive_path != "" ? filebase64(var.site_archive_path) : ""
@@ -46,7 +65,7 @@ module "ec2" {
   db_name     = var.db_name
   db_username = var.db_username
   db_password = var.db_password
-  db_host     = "localhost"
+  db_host     = module.rds.db_endpoint
 
   wp_admin_user     = var.wp_admin_user
   wp_admin_password = var.wp_admin_password

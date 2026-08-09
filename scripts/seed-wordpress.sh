@@ -46,7 +46,7 @@ sudo -u www-data wp post update "$CONTACT_ID" --path="$WP_PATH" --post_content="
 echo "Creating sample posts..."
 sudo -u www-data wp post create --path="$WP_PATH" --post_type=post --post_title="Launching WordPress on AWS" --post_status=publish --post_content="This sample post explains the demo architecture."
 sudo -u www-data wp post create --path="$WP_PATH" --post_type=post --post_title="Why Terraform for WordPress" --post_status=publish --post_content="Terraform keeps infrastructure repeatable, reviewable, and easy to destroy after demos."
-sudo -u www-data wp post create --path="$WP_PATH" --post_type=post --post_title="Cost Control for Demos" --post_status=publish --post_content="The dev-lite environment keeps costs low by running WordPress and MariaDB on one EC2 instance."
+sudo -u www-data wp post create --path="$WP_PATH" --post_type=post --post_title="Cost Control for Demos" --post_status=publish --post_content="The wp-lite environment keeps costs low by running WordPress and MariaDB on one EC2 instance."
 
 echo "Creating navigation menu..."
 MENU_NAME="Primary Navigation"

@@ -1,19 +1,19 @@
-# dev-mig Environment Scaffold
+# wp-mig Environment Scaffold
 
-`dev-mig` is a future migration-focused environment.
+`wp-mig` is a future migration-focused environment.
 
 It is intentionally not deployable yet. The purpose of this folder is to reserve a clear Terraform workspace for future WordPress client migration workflows.
 
 ## Intended Purpose
 
 - Stage a clean AWS target for importing an existing WordPress site.
-- Keep migration-specific variables separate from `dev-lite` and `dev-rds`.
+- Keep migration-specific variables separate from `wp-lite` and `wp-rds`.
 - Support repeatable client rehosting workflows.
 - Track migration readiness before any DNS cutover.
 
 ## Future Resources
 
-This environment will likely build on the `dev-rds` architecture:
+This environment will likely build on the `wp-rds` architecture:
 
 - EC2 WordPress server.
 - RDS MySQL database in private subnets.
@@ -23,4 +23,4 @@ This environment will likely build on the `dev-rds` architecture:
 
 ## Current Status
 
-Placeholder only. Use `docs/dev-mig-guide.md` and `scripts/prepare-migration.sh` for planning until this environment is implemented.
+Placeholder only. Use `docs/wp-mig-guide.md` and `scripts/prepare-migration.sh` for planning until this environment is implemented.
