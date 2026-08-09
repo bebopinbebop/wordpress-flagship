@@ -10,6 +10,14 @@ This guide explains the intended deployment flow for the MVP AWS WordPress platf
 - An EC2 key pair created in the target AWS region.
 - A safe way to provide database and WordPress admin credentials, such as local environment variables, ignored `.tfvars` files, or a secrets manager.
 
+On a fresh Ubuntu/Debian or WSL machine, install the local command-line tools with:
+
+```bash
+./scripts/install-prereqs.sh
+```
+
+This installs local tools only. It does not configure AWS credentials, create an EC2 key pair, or deploy AWS resources.
+
 ## Important Secret Reminder
 
 Never commit real secrets to Git.
