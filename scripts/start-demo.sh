@@ -67,7 +67,7 @@ require_command() {
   echo "${GREEN}[ok]${RESET} $command_name is installed"
 }
 
-# Checks to make sure all required commands are installed on system before commiting to script
+# Checks to make sure all required commands are installed on system before committing to script
 run_local_preflight() {
   echo "Running local workstation preflight checks..."
 
@@ -81,6 +81,7 @@ run_local_preflight() {
   echo
 }
 
+# After bulding EC2, a curl request pings index.php of the wordpress root to establish whether the EC2 is ready.
 wait_for_wordpress() {
   local url="$1"
   local admin_user="$2"
@@ -127,12 +128,14 @@ wait_for_wordpress() {
   return 1
 }
 
+# Establishes which env the user is trying to make from a set of known envs: wp-lite, wp-rds, and wp-mig.
+# Doing so would set what Terraform path would be chosen to build a distinct list of AWS resources
 choose_environment() {
   local selected_environment
 
   echo "Choose a demo path:"
   echo "  wp-lite  - active low-cost EC2 + local MariaDB demo"
-  echo "  wp-rds   - reserved for the future RDS production-track workflow"
+  echo "  wp-rds   - active EC2 + private RDS MySQL + S3 backup bucket demo"
   echo "  wp-mig   - reserved for the future WordPress migration workflow"
   echo
 
@@ -149,30 +152,27 @@ choose_environment() {
   esac
 }
 
+# Displays information for placeholder environments that are not active yet.
 explain_reserved_environment() {
   local environment="$1"
 
   echo
   echo "The $environment branch is recognized, but it is not active yet."
-
-  if [ "$environment" = "wp-rds" ]; then
-    echo "Planned purpose: build the future production-track WordPress architecture with EC2, RDS MySQL, and S3 backups."
-    echo "Current recommendation: use wp-lite while the RDS workflow is being finalized."
-  else
-    echo "Planned purpose: prepare future WordPress migration and rehosting workflows."
-    echo "Current recommendation: run ./scripts/prepare-migration.sh or ./scripts/check-migration-readiness.sh for migration planning."
-  fi
+  echo "Planned purpose: prepare future WordPress migration and rehosting workflows."
+  echo "Current recommendation: run ./scripts/prepare-migration.sh or ./scripts/check-migration-readiness.sh for migration planning."
 
   echo
   echo "No Terraform was initialized, planned, applied, or destroyed."
 }
 
-run_wp_lite_preflight() {
+# Checks for required installs to make the chosen env work
+run_wordpress_env_preflight() {
+  local environment="$1"
   local aws_identity
   local ssh_confirm
 
   echo
-  echo "Running wp-lite AWS and project preflight checks..."
+  echo "Running $environment AWS and project preflight checks..."
 
   if [ ! -d "$ENV_DIR" ]; then
     echo "Environment directory does not exist: $ENV_DIR"
@@ -191,7 +191,7 @@ run_wp_lite_preflight() {
   fi
   echo "${GREEN}[ok]${RESET} Static demo website folder found"
 
-  if ! aws_identity="$(aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" --query '[Account,Arn]' --output text 2>/dev/null)"; then
+  if ! AWS_ACCOUNT_ID="$(aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" --query 'Account' --output text 2>/dev/null)"; then
     echo
     echo "AWS profile '$AWS_PROFILE_NAME' is not authenticated."
     echo "For SSO, run: aws configure sso"
@@ -199,8 +199,10 @@ run_wp_lite_preflight() {
     echo "For standard profiles, run: aws configure --profile $AWS_PROFILE_NAME"
     exit 1
   fi
+  aws_identity="$(aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" --query 'Arn' --output text 2>/dev/null)"
   echo "${GREEN}[ok]${RESET} AWS profile is authenticated"
-  echo "     $aws_identity"
+  echo "     Account: $AWS_ACCOUNT_ID"
+  echo "     ARN: $aws_identity"
 
   if [ "$KEY_NAME" = "replace-with-your-key-pair" ]; then
     echo
@@ -232,13 +234,47 @@ run_wp_lite_preflight() {
     fi
   fi
 
-  echo "${GREEN}[ok]${RESET} wp-lite AWS and project preflight checks passed"
+  echo "${GREEN}[ok]${RESET} $environment AWS and project preflight checks passed"
 }
 
-deploy_wp_lite() {
-  local environment="wp-lite"
+validate_wp_rds_inputs() {
+  if [[ ! "$DB_USERNAME" =~ ^[A-Za-z][A-Za-z0-9]{0,15}$ ]]; then
+    echo
+    echo "RDS database username must start with a letter, use only letters and numbers, and be 16 characters or fewer."
+    echo "Example: wpadmin"
+    exit 1
+  fi
+
+  if [ "${#DB_PASSWORD}" -lt 8 ] || [ "${#DB_PASSWORD}" -gt 41 ]; then
+    echo
+    echo "RDS database password must be between 8 and 41 characters."
+    exit 1
+  fi
+
+  if [[ "$DB_PASSWORD" == *"/"* || "$DB_PASSWORD" == *"\""* || "$DB_PASSWORD" == *"@"* ]]; then
+    echo
+    echo "RDS database password cannot contain /, double quote, or @ characters."
+    exit 1
+  fi
+
+  if [[ ! "$BACKUP_BUCKET_NAME" =~ ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$ ]]; then
+    echo
+    echo "S3 backup bucket names must be 3-63 characters and use lowercase letters, numbers, dots, or hyphens."
+    exit 1
+  fi
+}
+
+# Setting variables for the user to input, to then call Terraform and build the stack in AWS.
+deploy_wordpress_environment() {
+  local environment="$1"
+  local default_db_username
+  local default_backup_bucket_name
 
   echo "The default flow uses WordPress at / and the static demo site at /demo/."
+  if [ "$environment" = "wp-rds" ]; then
+    echo "wp-rds also creates a private RDS MySQL database and an S3 bucket reserved for backups."
+    echo "${RED}Cost note: wp-rds costs more than wp-lite because RDS runs as a separate managed database.${RESET}"
+  fi
   echo
 
   SITE_TITLE="$(prompt_default "Website display name" "Cloud WordPress Demo")"
@@ -256,7 +292,7 @@ deploy_wp_lite() {
   ENV_DIR="$ROOT_DIR/terraform/environments/$environment"
   TFVARS_FILE="$ENV_DIR/terraform.tfvars"
 
-  run_wp_lite_preflight
+  run_wordpress_env_preflight "$environment"
 
   PROJECT_SLUG="$(slugify "$SITE_TITLE")"
   if [ -z "$PROJECT_SLUG" ]; then
@@ -265,9 +301,19 @@ deploy_wp_lite() {
 
   PROJECT_NAME="$(prompt_default "Terraform project/resource name" "${environment}-${PROJECT_SLUG}")"
   DB_NAME="$(prompt_default "WordPress database name" "wordpress")"
-  DB_USERNAME="$(prompt_default "WordPress database username" "wordpress_user")"
+  if [ "$environment" = "wp-rds" ]; then
+    default_db_username="wpadmin"
+  else
+    default_db_username="wordpress_user"
+  fi
+  DB_USERNAME="$(prompt_default "WordPress database username" "$default_db_username")"
   WP_ADMIN_USER="$(prompt_default "WordPress admin username" "demo_admin")"
   WP_ADMIN_EMAIL="$(prompt_default "WordPress admin email" "admin@example.com")"
+
+  if [ "$environment" = "wp-rds" ]; then
+    default_backup_bucket_name="${PROJECT_NAME}-backups-${AWS_REGION}-${AWS_ACCOUNT_ID}"
+    BACKUP_BUCKET_NAME="$(prompt_default "Globally unique S3 backup bucket name" "$default_backup_bucket_name")"
+  fi
 
   GENERATED_DB_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=' | cut -c 1-24)"
   GENERATED_WP_ADMIN_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=' | cut -c 1-24)"
@@ -276,6 +322,10 @@ deploy_wp_lite() {
   DB_PASSWORD="${DB_PASSWORD:-$GENERATED_DB_PASSWORD}"
   WP_ADMIN_PASSWORD="$(prompt_secret "WordPress admin password for browser login (leave blank to generate one)")"
   WP_ADMIN_PASSWORD="${WP_ADMIN_PASSWORD:-$GENERATED_WP_ADMIN_PASSWORD}"
+
+  if [ "$environment" = "wp-rds" ]; then
+    validate_wp_rds_inputs
+  fi
 
   GENERATED_DIR="$ROOT_DIR/.generated"
   SITE_ARCHIVE="$GENERATED_DIR/${environment}-${PROJECT_SLUG}-site.zip"
@@ -305,6 +355,12 @@ wp_admin_user     = $(hcl_string "$WP_ADMIN_USER")
 wp_admin_email    = $(hcl_string "$WP_ADMIN_EMAIL")
 wp_admin_password = $(hcl_string "$WP_ADMIN_PASSWORD")
 VARS
+
+  if [ "$environment" = "wp-rds" ]; then
+    cat >> "$TFVARS_FILE" <<VARS
+backup_bucket_name = $(hcl_string "$BACKUP_BUCKET_NAME")
+VARS
+  fi
 
   echo
   echo "Initializing Terraform..."
@@ -342,6 +398,17 @@ VARS
   fi
 }
 
+# START OF SCRIPT
+cat << 'EOF'
+                          ____ __                     __     _      
+ _      __ ____          / __// /____ _ ____ _ _____ / /_   (_)____ 
+| | /| / // __ \ ______ / /_ / // __ `// __ `// ___// __ \ / // __ \
+| |/ |/ // /_/ //_____// __// // /_/ // /_/ /(__  )/ / / // // /_/ /
+|__/|__// .___/       /_/  /_/ \__,_/ \__, //____//_/ /_//_// .___/ 
+       /_/                           /____/                /_/        
+                                         
+EOF
+
 echo "WordPress Flagship Demo Launcher"
 echo
 echo "This script chooses a project environment and runs its startup workflow."
@@ -352,10 +419,10 @@ run_local_preflight
 choose_environment
 
 case "$ENVIRONMENT" in
-  wp-lite)
-    deploy_wp_lite
+  wp-lite | wp-rds)
+    deploy_wordpress_environment "$ENVIRONMENT"
     ;;
-  wp-rds | wp-mig)
+  wp-mig)
     explain_reserved_environment "$ENVIRONMENT"
     ;;
 esac

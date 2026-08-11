@@ -25,7 +25,9 @@ site_archive_path = "../../../.generated/wp-rds-cloud-wordpress-demo-site.zip"
 
 db_name = "wordpress"
 
-db_username = "wordpress_user"
+# RDS master usernames must use letters/numbers only, start with a letter,
+# and be 16 characters or fewer.
+db_username = "wpadmin"
 
 # S3 bucket names must be globally unique.
 backup_bucket_name = "replace-with-globally-unique-wp-rds-backup-bucket"

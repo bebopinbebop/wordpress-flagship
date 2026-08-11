@@ -55,7 +55,7 @@ variable "db_name" {
 variable "db_username" {
   description = "Initial RDS MySQL username for WordPress."
   type        = string
-  default     = "wordpress_user"
+  default     = "wpadmin"
 }
 
 variable "db_password" {

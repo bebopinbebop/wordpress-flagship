@@ -34,7 +34,7 @@ Do not commit:
 ## Environment Layout
 
 - `terraform/environments/wp-lite` is for the lowest-cost demos with WordPress and MariaDB on one EC2 instance.
-- `terraform/environments/wp-rds` is for testing WordPress on EC2 with RDS MySQL in private subnets. The guided startup branch is recognized but not active yet.
+- `terraform/environments/wp-rds` is for testing WordPress on EC2 with RDS MySQL in private subnets and an S3 bucket reserved for backups.
 - `terraform/environments/wp-mig` is a placeholder for future migration and rehosting workflows.
 - Shared infrastructure logic lives in `terraform/modules`.
 
@@ -46,9 +46,11 @@ The easiest demo path is the guided launcher:
 ./scripts/start-demo.sh
 ```
 
-The launcher asks which environment path to use: `wp-lite`, `wp-rds`, or `wp-mig`. Currently, only `wp-lite` continues into Terraform deployment. The `wp-rds` and `wp-mig` branches are recognized and exit with planning guidance until their routines are finalized.
+The launcher asks which environment path to use: `wp-lite`, `wp-rds`, or `wp-mig`. Currently, `wp-lite` and `wp-rds` continue into Terraform deployment. The `wp-mig` branch is recognized and exits with planning guidance until its routine is finalized.
 
-For `wp-lite`, the launcher asks for the website name, static website folder, AWS profile, region, key pair, SSH CIDR, database settings, and a separate WordPress admin login. It packages the static website folder into `.generated/`, writes a local ignored `terraform.tfvars` file, waits for WordPress, and prints the site URLs plus the WordPress admin username and password after deployment.
+For `wp-lite` and `wp-rds`, the launcher asks for the website name, static website folder, AWS profile, region, key pair, SSH CIDR, database settings, and a separate WordPress admin login. It packages the static website folder into `.generated/`, writes a local ignored `terraform.tfvars` file, waits for WordPress, and prints the site URLs plus the WordPress admin username and password after deployment.
+
+For `wp-rds`, the launcher also asks for a globally unique S3 backup bucket name.
 
 The default website source is:
 

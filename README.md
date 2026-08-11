@@ -45,9 +45,6 @@ The end goal would be that for an individual to then login to the `\wp-admin` pa
 
 It separates the web and database tiers while securing the internal networking, managed database provisioning, and infrastructure automation. The environment provides a live WordPress site with data stored in RDS, making it ideal for migration testing, client hosting demonstrations, and preparing for future production enhancements. See further detail [here](docs/wp-rds-guide.md).
 
-[!WARNING]
-**TODO** The main startup script recognizes this branch, but the guided `wp-rds` routine will be finalized later.
-
 - Custom VPC with public and private subnets.
 - One EC2 instance in a public subnet.
 - RDS MySQL database in private subnets.

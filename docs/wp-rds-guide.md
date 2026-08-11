@@ -13,13 +13,17 @@ It creates one EC2 instance for WordPress, one RDS MySQL database in private sub
 
 ## Deploy
 
-Guided deployment is not active yet. The main startup script recognizes `wp-rds` as a future branch and exits before running Terraform.
+Guided deployment:
 
 ```bash
 ./scripts/start-demo.sh
 ```
 
-When this branch is finalized, the database password will be the hidden RDS login WordPress uses internally. The WordPress admin password should remain a separate password for the `/wp-admin/` browser login.
+Choose `wp-rds` when the launcher asks for the environment.
+
+The database password is the hidden RDS MySQL login WordPress uses internally. The WordPress admin password should remain a separate password for the `/wp-admin/` browser login.
+
+The launcher also asks for a globally unique S3 backup bucket name. The default includes your project name, AWS region, and AWS account ID to reduce naming conflicts.
 
 After the instance finishes bootstrapping:
 
@@ -54,3 +58,11 @@ terraform destroy
 ```
 
 The wp-rds environment costs more than wp-lite because RDS runs as a separate managed database.
+
+## Diagnose
+
+For a safe read-only check of the EC2 instance, RDS database, S3 bucket, and HTTP endpoint:
+
+```bash
+AWS_PROFILE=your-profile-name ./scripts/diagnose-wp-rds.sh
+```
