@@ -32,7 +32,7 @@ locals {
 }
 
 data "aws_iam_policy_document" "ec2_assume_role" {
-  count = var.s3_backup_bucket_arn != "" ? 1 : 0
+  count = var.enable_s3_access ? 1 : 0
 
   statement {
     actions = ["sts:AssumeRole"]
@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "ec2_assume_role" {
 }
 
 data "aws_iam_policy_document" "s3_demo_access" {
-  count = var.s3_backup_bucket_arn != "" ? 1 : 0
+  count = var.enable_s3_access ? 1 : 0
 
   statement {
     actions   = ["s3:ListBucket"]
@@ -62,7 +62,7 @@ data "aws_iam_policy_document" "s3_demo_access" {
 }
 
 resource "aws_iam_role" "wordpress_s3" {
-  count = var.s3_backup_bucket_arn != "" ? 1 : 0
+  count = var.enable_s3_access ? 1 : 0
 
   name               = "${var.project_name}-wordpress-s3-role"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role[0].json
@@ -74,7 +74,7 @@ resource "aws_iam_role" "wordpress_s3" {
 }
 
 resource "aws_iam_role_policy" "wordpress_s3" {
-  count = var.s3_backup_bucket_arn != "" ? 1 : 0
+  count = var.enable_s3_access ? 1 : 0
 
   name   = "${var.project_name}-wordpress-s3-demo-policy"
   role   = aws_iam_role.wordpress_s3[0].id
@@ -82,7 +82,7 @@ resource "aws_iam_role_policy" "wordpress_s3" {
 }
 
 resource "aws_iam_instance_profile" "wordpress_s3" {
-  count = var.s3_backup_bucket_arn != "" ? 1 : 0
+  count = var.enable_s3_access ? 1 : 0
 
   name = "${var.project_name}-wordpress-s3-profile"
   role = aws_iam_role.wordpress_s3[0].name
@@ -94,7 +94,7 @@ resource "aws_instance" "wordpress" {
   subnet_id              = var.public_subnet_id
   vpc_security_group_ids = [var.wordpress_sg_id]
   key_name               = var.key_name
-  iam_instance_profile   = var.s3_backup_bucket_arn != "" ? aws_iam_instance_profile.wordpress_s3[0].name : null
+  iam_instance_profile   = var.enable_s3_access ? aws_iam_instance_profile.wordpress_s3[0].name : null
   user_data              = local.wordpress_user_data
 
   tags = {

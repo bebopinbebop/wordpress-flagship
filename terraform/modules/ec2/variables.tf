@@ -91,6 +91,12 @@ variable "s3_backup_bucket_name" {
   default     = ""
 }
 
+variable "enable_s3_access" {
+  description = "When true, create an EC2 instance profile that can read/write the configured S3 bucket."
+  type        = bool
+  default     = false
+}
+
 variable "s3_backup_bucket_arn" {
   description = "Optional S3 bucket ARN used to grant EC2 upload access for the wp-rds demo."
   type        = string

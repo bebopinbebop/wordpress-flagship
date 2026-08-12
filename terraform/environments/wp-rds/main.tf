@@ -71,6 +71,7 @@ module "ec2" {
   wp_admin_password = var.wp_admin_password
   wp_admin_email    = var.wp_admin_email
 
+  enable_s3_access      = true
   s3_backup_bucket_name = module.backup_bucket.bucket_name
   s3_backup_bucket_arn  = module.backup_bucket.bucket_arn
 }
