@@ -36,5 +36,13 @@ Thumbs.db
 # Generated deployment bundles
 .generated/
 
+# Migration artifacts and database exports
+migration-artifacts/
+**/migration-artifacts/
+*.sql
+*.sql.gz
+*.dump
+wp-content-*.tar.gz
+
 # Local learning notes
 CI_LEARNING_NOTES.md

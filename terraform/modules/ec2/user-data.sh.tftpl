@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
-# User data runs when the EC2 instance first boots.
-# install_mode controls whether WordPress uses local MariaDB or RDS MySQL.
+# EC2 user data runs once when the instance first boots.
+# Keep this file small: AWS limits EC2 user_data to 16 KB.
 
 set -euo pipefail
-
 exec > >(tee -a /var/log/wordpress-bootstrap.log) 2>&1
 
 INSTALL_MODE="${install_mode}"
@@ -17,57 +16,47 @@ DB_HOST="${db_host}"
 WP_ADMIN_USER="${wp_admin_user}"
 WP_ADMIN_PASSWORD="${wp_admin_password}"
 WP_ADMIN_EMAIL="${wp_admin_email}"
+S3_BACKUP_BUCKET="${s3_backup_bucket_name}"
 SITE_URL="http://$(curl -fsS http://169.254.169.254/latest/meta-data/public-hostname)"
 
 echo "Starting WordPress bootstrap for $${SITE_TITLE}..."
-
-echo "Updating packages..."
 apt-get update -y
+apt-get install -y apache2 mysql-client unzip curl rsync php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip
 
-echo "Installing Apache, PHP, and MySQL client packages..."
-apt-get install -y apache2 mysql-client unzip curl rsync \
-  php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip
+%{ if s3_backup_bucket_name != "" }
+if [ "$${INSTALL_MODE}" = "rds" ] && [ -n "$${S3_BACKUP_BUCKET}" ]; then
+  apt-get install -y awscli
+fi
 
 if [ "$${INSTALL_MODE}" = "local-db" ]; then
-  echo "Installing local MariaDB for wp-lite..."
   apt-get install -y mariadb-server
   systemctl enable mariadb
   systemctl start mariadb
-
   mysql -e "CREATE DATABASE IF NOT EXISTS \`$${DB_NAME}\`;"
   mysql -e "CREATE USER IF NOT EXISTS '$${DB_USER}'@'localhost' IDENTIFIED BY '$${DB_PASSWORD}';"
   mysql -e "GRANT ALL PRIVILEGES ON \`$${DB_NAME}\`.* TO '$${DB_USER}'@'localhost';"
   mysql -e "FLUSH PRIVILEGES;"
 fi
 
-echo "Enabling and starting Apache..."
 systemctl enable apache2
 systemctl start apache2
 
-echo "Downloading WordPress..."
 cd /tmp
 curl -fsSLO https://wordpress.org/latest.zip
 unzip -q latest.zip
-
-echo "Copying WordPress files into the Apache web root..."
 rm -f /var/www/html/index.html
 rsync -a /tmp/wordpress/ /var/www/html/
-chown -R www-data:www-data /var/www/html/
-find /var/www/html/ -type d -exec chmod 755 {} \;
-find /var/www/html/ -type f -exec chmod 644 {} \;
 
-echo "Creating wp-config.php with database settings from Terraform variables..."
 cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
 sed -i "s/database_name_here/$${DB_NAME}/" /var/www/html/wp-config.php
 sed -i "s/username_here/$${DB_USER}/" /var/www/html/wp-config.php
 sed -i "s/password_here/$${DB_PASSWORD}/" /var/www/html/wp-config.php
 sed -i "s/localhost/$${DB_HOST}/" /var/www/html/wp-config.php
 
-echo "Installing WP-CLI..."
 curl -fsSLo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 chmod +x /usr/local/bin/wp
+chown -R www-data:www-data /var/www/html/
 
-echo "Installing WordPress core content..."
 if ! sudo -u www-data wp core is-installed --path=/var/www/html; then
   sudo -u www-data wp core install \
     --path=/var/www/html \
@@ -83,10 +72,9 @@ HOME_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page
 ABOUT_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='About' --post_status=publish --porcelain)"
 SERVICES_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='Services' --post_status=publish --porcelain)"
 
-sudo -u www-data wp post update "$${HOME_ID}" --path=/var/www/html --post_content="<h2>Welcome to $${SITE_TITLE}</h2><p>This WordPress site is hosted on AWS infrastructure created with Terraform. Edit this page from the WordPress admin dashboard.</p><p><a href='/demo/'>View the Terraform infrastructure demo pages</a>.</p>"
-sudo -u www-data wp post update "$${ABOUT_ID}" --path=/var/www/html --post_content="<p>This site demonstrates a repeatable WordPress hosting platform using AWS, Terraform, EC2, and either local MariaDB or RDS MySQL.</p>"
-sudo -u www-data wp post update "$${SERVICES_ID}" --path=/var/www/html --post_content="<p>Example services include WordPress rehosting, infrastructure-as-code setup, AWS cost controls, backup planning, and production hardening.</p>"
-
+sudo -u www-data wp post update "$${HOME_ID}" --path=/var/www/html --post_content="<h2>Welcome to $${SITE_TITLE}</h2><p>This WordPress site is hosted on AWS infrastructure created with Terraform.</p><p><a href='/demo/'>View the infrastructure demo</a>.</p>"
+sudo -u www-data wp post update "$${ABOUT_ID}" --path=/var/www/html --post_content="<p>This site demonstrates repeatable WordPress hosting using AWS, Terraform, EC2, and either local MariaDB or RDS MySQL.</p>"
+sudo -u www-data wp post update "$${SERVICES_ID}" --path=/var/www/html --post_content="<p>Example services include WordPress rehosting, infrastructure as code, AWS cost controls, backups, and hardening.</p>"
 sudo -u www-data wp option update show_on_front page --path=/var/www/html
 sudo -u www-data wp option update page_on_front "$${HOME_ID}" --path=/var/www/html
 sudo -u www-data wp option update blogdescription "AWS WordPress Terraform platform" --path=/var/www/html
@@ -94,195 +82,82 @@ sudo -u www-data wp option update blogdescription "AWS WordPress Terraform platf
 if ! sudo -u www-data wp menu list --path=/var/www/html --field=name | grep -Fxq "Primary Navigation"; then
   sudo -u www-data wp menu create "Primary Navigation" --path=/var/www/html
 fi
-
 sudo -u www-data wp menu item add-post "Primary Navigation" "$${HOME_ID}" --path=/var/www/html || true
 sudo -u www-data wp menu item add-post "Primary Navigation" "$${ABOUT_ID}" --path=/var/www/html || true
 sudo -u www-data wp menu item add-post "Primary Navigation" "$${SERVICES_ID}" --path=/var/www/html || true
 sudo -u www-data wp menu item add-custom "Primary Navigation" "Infrastructure Demo" "$${SITE_URL}/demo/" --path=/var/www/html || true
 
+mkdir -p /var/www/html/demo
 if [ -n "$${SITE_ARCHIVE_BASE64}" ]; then
-  echo "Installing static website archive under /demo..."
-  mkdir -p /tmp/static-site
-  printf '%s' "$${SITE_ARCHIVE_BASE64}" | base64 -d > /tmp/static-site/site.zip
-  unzip -oq /tmp/static-site/site.zip -d /tmp/static-site/extracted
-  mkdir -p /var/www/html/demo
-
-  if [ -f /tmp/static-site/extracted/index.html ]; then
-    rsync -a /tmp/static-site/extracted/ /var/www/html/demo/
+  printf '%s' "$${SITE_ARCHIVE_BASE64}" | base64 -d > /tmp/site.zip
+  unzip -oq /tmp/site.zip -d /tmp/static-site
+  if [ -f /tmp/static-site/index.html ]; then
+    rsync -a /tmp/static-site/ /var/www/html/demo/
   else
-    first_index="$(find /tmp/static-site/extracted -mindepth 2 -name index.html | head -n 1)"
-    if [ -n "$${first_index}" ]; then
-      site_root="$(dirname "$${first_index}")"
-      rsync -a "$${site_root}/" /var/www/html/demo/
-    else
-      echo "Static site archive did not contain index.html. Creating fallback demo page."
-    fi
+    first_index="$(find /tmp/static-site -mindepth 2 -name index.html | head -n 1)"
+    [ -n "$${first_index}" ] && rsync -a "$(dirname "$${first_index}")/" /var/www/html/demo/
   fi
 fi
 
 if [ ! -f /var/www/html/demo/index.html ]; then
-  echo "Creating fallback static demo page..."
-  mkdir -p /var/www/html/demo
   cat > /var/www/html/demo/index.html <<HTML
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>$${SITE_TITLE}</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #172033;
-      --muted: #5d6b82;
-      --line: #d7deea;
-      --paper: #fffaf2;
-      --mint: #c9f2df;
-      --sky: #bfe4ff;
-      --coral: #ffb5a7;
-      --gold: #ffe08a;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--ink);
-      background:
-        linear-gradient(135deg, rgba(191, 228, 255, .75), rgba(255, 224, 138, .55)),
-        var(--paper);
-    }
-    main {
-      width: min(1040px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 56px 0;
-    }
-    .hero {
-      display: grid;
-      gap: 28px;
-      align-items: center;
-      grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(2.4rem, 7vw, 5.8rem);
-      line-height: .94;
-      letter-spacing: 0;
-    }
-    .lede {
-      max-width: 680px;
-      margin: 22px 0 0;
-      color: var(--muted);
-      font-size: 1.15rem;
-      line-height: 1.7;
-    }
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, .76);
-      box-shadow: 0 24px 70px rgba(23, 32, 51, .12);
-      padding: 24px;
-    }
-    .stack {
-      display: grid;
-      gap: 12px;
-      margin-top: 24px;
-    }
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 12px;
-    }
-    .row:last-child { border-bottom: 0; padding-bottom: 0; }
-    .label { color: var(--muted); }
-    .value { font-weight: 700; text-align: right; }
-    .badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 26px;
-    }
-    .badge {
-      border: 1px solid rgba(23, 32, 51, .14);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .7);
-      padding: 8px 12px;
-      font-weight: 700;
-      font-size: .92rem;
-    }
-    .site-card {
-      min-height: 360px;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      background:
-        linear-gradient(160deg, rgba(201, 242, 223, .95), rgba(255, 181, 167, .74)),
-        #fff;
-    }
-    .mark {
-      width: 142px;
-      height: 142px;
-      border: 2px solid rgba(23, 32, 51, .18);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      margin: 0 auto 18px;
-      background: rgba(255, 255, 255, .56);
-      font-size: 3.6rem;
-      font-weight: 900;
-    }
-    a {
-      color: #195bb8;
-      font-weight: 800;
-    }
-    @media (max-width: 780px) {
-      .hero { grid-template-columns: 1fr; }
-      main { padding-top: 32px; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <section class="hero">
-      <div>
-        <h1>$${SITE_TITLE}</h1>
-        <p class="lede">
-          This live demo page was launched on AWS with Terraform. The instance installed Apache,
-          PHP, WordPress, and the selected database mode automatically during boot.
-        </p>
-        <div class="badges">
-          <span class="badge">Terraform</span>
-          <span class="badge">AWS EC2</span>
-          <span class="badge">WordPress</span>
-          <span class="badge">Bootstrap Automation</span>
-        </div>
-      </div>
-      <div class="panel site-card">
-        <div>
-          <div class="mark">WP</div>
-          <h2>Demo is online</h2>
-          <p>WordPress is the main site at <a href="/">/</a> and admin is available at <a href="/wp-admin/">/wp-admin/</a>.</p>
-        </div>
-      </div>
-    </section>
-    <section class="panel stack" style="margin-top: 28px;">
-      <div class="row"><span class="label">Environment mode</span><span class="value">$${INSTALL_MODE}</span></div>
-      <div class="row"><span class="label">Database host</span><span class="value">$${DB_HOST}</span></div>
-      <div class="row"><span class="label">Public URL</span><span class="value">$${SITE_URL}</span></div>
-    </section>
-  </main>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>$${SITE_TITLE}</title><style>body{margin:0;font-family:system-ui;background:#f6f8fb;color:#172033}main{max-width:900px;margin:10vh auto;padding:24px}.panel{background:#fff;border:1px solid #d7deea;border-radius:8px;padding:24px;box-shadow:0 18px 50px #17203314}.badges{display:flex;gap:10px;flex-wrap:wrap}.badge{background:#e9f5ff;border-radius:999px;padding:8px 12px;font-weight:700}</style></head><body><main><section class="panel"><h1>$${SITE_TITLE}</h1><p>This demo was launched on AWS with Terraform. WordPress is available at <a href="/">/</a> and admin at <a href="/wp-admin/">/wp-admin/</a>.</p><div class="badges"><span class="badge">Terraform</span><span class="badge">AWS EC2</span><span class="badge">WordPress</span><span class="badge">$${INSTALL_MODE}</span></div></section></main></body></html>
 HTML
 fi
+
+if [ "$${INSTALL_MODE}" = "rds" ] && [ -n "$${S3_BACKUP_BUCKET}" ]; then
+  sudo -u www-data wp menu item add-custom "Primary Navigation" "RDS + S3 Lab" "$${SITE_URL}/demo/rds-lab.php" --path=/var/www/html || true
+  cat > /var/www/html/demo/rds-lab.php <<'PHP'
+<?php
+require_once __DIR__ . '/../wp-load.php';
+$bucket = '__S3_BUCKET_NAME__';
+if (!is_user_logged_in() || !current_user_can('manage_options')) {
+  wp_safe_redirect(wp_login_url('/demo/rds-lab.php'));
+  exit;
+}
+global $wpdb;
+$table = $wpdb->prefix . 'infra_demo_assets';
+$wpdb->query("CREATE TABLE IF NOT EXISTS $table (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,demo_note VARCHAR(255) NOT NULL,status VARCHAR(40) NOT NULL DEFAULT 'Planned',s3_uri TEXT NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(id)) ".$wpdb->get_charset_collate());
+$msg = '';
+$err = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  check_admin_referer('rds_s3_lab_action');
+  $action = sanitize_text_field(wp_unslash($_POST['action'] ?? ''));
+  $id = absint($_POST['row_id'] ?? 0);
+  if ($action === 'add' || $action === 'update') {
+    $data = ['demo_note' => sanitize_text_field(wp_unslash($_POST['demo_note'] ?? '')), 'status' => sanitize_text_field(wp_unslash($_POST['status'] ?? 'Planned'))];
+    $action === 'add' ? $wpdb->insert($table, $data) : $wpdb->update($table, $data, ['id' => $id]);
+    $msg = 'Database row saved in RDS.';
+  } elseif ($action === 'delete') {
+    $wpdb->delete($table, ['id' => $id]);
+    $msg = 'Database row deleted from RDS.';
+  } elseif ($action === 'upload' && !empty($_FILES['demo_file']['tmp_name'])) {
+    $name = sanitize_file_name($_FILES['demo_file']['name']);
+    $tmp = '/tmp/wp-rds-demo-' . uniqid('', true) . '-' . $name;
+    if (move_uploaded_file($_FILES['demo_file']['tmp_name'], $tmp)) {
+      $uri = 's3://' . $bucket . '/demo-uploads/' . gmdate('Ymd-His') . '-' . $name;
+      $out = shell_exec('aws s3 cp ' . escapeshellarg($tmp) . ' ' . escapeshellarg($uri) . ' --only-show-errors 2>&1');
+      unlink($tmp);
+      if ($out === null || trim($out) === '') {
+        $wpdb->update($table, ['s3_uri' => $uri], ['id' => $id]);
+        $msg = 'File uploaded to S3 and linked to the RDS row.';
+      } else {
+        $err = trim($out);
+      }
+    }
+  }
+}
+$rows = $wpdb->get_results("SELECT * FROM $table ORDER BY id DESC LIMIT 25");
+?>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RDS + S3 Lab</title><style>body{font-family:system-ui;margin:0;background:#f6f8fb;color:#172033}main{max-width:1100px;margin:auto;padding:32px}.panel{background:#fff;border:1px solid #d7deea;border-radius:8px;margin:16px 0;padding:20px}input,select,button{font:inherit;padding:9px;margin:4px 0}button{background:#195bb8;color:#fff;border:0;border-radius:6px;font-weight:700}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #d7deea;padding:8px;text-align:left}.ok{background:#edfdf5;padding:10px}.err{background:#fff1f0;padding:10px}</style></head><body><main><h1>RDS + S3 Lab</h1><p>Rows save to RDS. Uploads copy to S3 bucket: <strong><?php echo esc_html($bucket); ?></strong></p><?php if($msg): ?><p class="ok"><?php echo esc_html($msg); ?></p><?php endif; ?><?php if($err): ?><p class="err"><?php echo esc_html($err); ?></p><?php endif; ?><form class="panel" method="post"><?php wp_nonce_field('rds_s3_lab_action'); ?><input type="hidden" name="action" value="add"><input name="demo_note" required value="Migration checklist item"><select name="status"><option>Planned</option><option>In Progress</option><option>Complete</option></select><button>Add RDS Row</button></form><section class="panel"><table><tr><th>ID</th><th>Note</th><th>Status</th><th>S3 URI</th><th>Actions</th></tr><?php foreach($rows as $row): ?><tr><td><?php echo esc_html($row->id); ?></td><td><form id="u<?php echo esc_attr($row->id); ?>" method="post"><?php wp_nonce_field('rds_s3_lab_action'); ?><input type="hidden" name="action" value="update"><input type="hidden" name="row_id" value="<?php echo esc_attr($row->id); ?>"><input name="demo_note" value="<?php echo esc_attr($row->demo_note); ?>"></form></td><td><select form="u<?php echo esc_attr($row->id); ?>" name="status"><option <?php selected($row->status,'Planned'); ?>>Planned</option><option <?php selected($row->status,'In Progress'); ?>>In Progress</option><option <?php selected($row->status,'Complete'); ?>>Complete</option></select></td><td><?php echo esc_html($row->s3_uri ?: 'No upload'); ?></td><td><button form="u<?php echo esc_attr($row->id); ?>">Update</button><form method="post" enctype="multipart/form-data"><?php wp_nonce_field('rds_s3_lab_action'); ?><input type="hidden" name="action" value="upload"><input type="hidden" name="row_id" value="<?php echo esc_attr($row->id); ?>"><input type="file" name="demo_file" required><button>Upload</button></form><form method="post"><?php wp_nonce_field('rds_s3_lab_action'); ?><input type="hidden" name="action" value="delete"><input type="hidden" name="row_id" value="<?php echo esc_attr($row->id); ?>"><button>Delete</button></form></td></tr><?php endforeach; ?></table></section></main></body></html>
+PHP
+  sed -i "s/__S3_BUCKET_NAME__/$${S3_BACKUP_BUCKET}/g" /var/www/html/demo/rds-lab.php
+fi
+%{ endif }
 
 chown -R www-data:www-data /var/www/html/
 find /var/www/html/ -type d -exec chmod 755 {} \;
 find /var/www/html/ -type f -exec chmod 644 {} \;
-
-echo "Restarting Apache..."
 systemctl restart apache2
 
 echo "WordPress is installed at $${SITE_URL}."

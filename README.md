@@ -49,11 +49,12 @@ It separates the web and database tiers while securing the internal networking, 
 - One EC2 instance in a public subnet.
 - RDS MySQL database in private subnets.
 - S3 bucket for future backups.
+- Admin-only `/demo/rds-lab.php` page that writes demo rows to RDS and uploads files to S3.
 - [ ] TODO: No NAT Gateway, Load Balancer, or CloudFront yet.
 
 ## wp-mig (Migration)
 
-**`wp-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It is currently a placeholder branch for a future production-style AWS environment and a repeatable workflow for importing WordPress content, databases, and media into secure AWS infrastructure. Intended for client migrations, `wp-mig` will showcase Infrastructure as Code (IaC), migration automation, and best practices for transitioning WordPress sites with minimal downtime. See further detail [here](docs/wp-mig-guide.md).
+**`wp-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It provisions a clean AWS migration target based on the `wp-rds` architecture, then uses migration scripts and documentation to guide export, transfer, restore, reconfiguration, validation, rollback, and cleanup. Intended for client migrations, `wp-mig` showcases Infrastructure as Code (IaC), migration automation, and best practices for moving WordPress sites with minimal downtime. See further detail [here](docs/wp-mig-guide.md).
 
 - EC2 web server for the migrated WordPress site
 - Amazon RDS MySQL database
@@ -126,7 +127,7 @@ This repository uses GitHub Actions to validate Terraform code on pushes to `mai
 
 The Terraform Checks workflow runs `terraform fmt -check -recursive`, verifies Bash script syntax, checks that local Terraform state and `.tfvars` files are not committed, and runs `terraform init -backend=false` plus `terraform validate` for the implemented Terraform environments.
 
-The `wp-mig` Terraform folder is currently a placeholder for future migration work, so the workflow documents that it is intentionally skipped until it becomes a real deployable root.
+The workflow validates the implemented Terraform environments: `wp-lite`, `wp-rds`, and `wp-mig`.
 
 CI validates infrastructure code only. It does not run `terraform apply` and does not deploy AWS resources.
 
@@ -177,7 +178,7 @@ CI validates infrastructure code only. It does not run `terraform apply` and doe
 
 - Deploy `wp-lite` for low-cost single-instance demos.
 - Reserve `wp-rds` for a more realistic EC2 + RDS architecture.
-- Reserve `wp-mig` for future migration and rehosting workflows.
+- Deploy `wp-mig` as a clean AWS target for migration and rehosting workflows.
 - Seed demo WordPress content with WP-CLI.
 - Document deployment, security, and cost controls.
 
@@ -225,4 +226,4 @@ Future production work should move secrets into AWS Secrets Manager or AWS Syste
 ## TODO
 
 - [ ] finalize wp-rds
-- [ ] finalize wp-mig
+- [ ] add wp-mig export, restore, URL replacement, and validation automation

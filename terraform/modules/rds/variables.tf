@@ -47,9 +47,14 @@ variable "backup_retention_period" {
   default     = 7
 }
 
+variable "delete_automated_backups" {
+  description = "Whether to delete automated backups when the demo database is destroyed."
+  type        = bool
+  default     = true
+}
+
 variable "skip_final_snapshot" {
   description = "Whether to skip a final snapshot when destroying the database."
   type        = bool
   default     = true
 }
-

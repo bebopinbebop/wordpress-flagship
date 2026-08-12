@@ -59,15 +59,18 @@ module "ec2" {
   key_name         = var.key_name
   install_mode     = "rds"
   site_title       = var.site_title
-  site_archive_base64 = (
-    var.site_archive_path != "" ? filebase64(var.site_archive_path) : ""
-  )
-  db_name     = var.db_name
-  db_username = var.db_username
-  db_password = var.db_password
-  db_host     = module.rds.db_endpoint
+  # wp-rds keeps EC2 user data small so Terraform destroy is not blocked by
+  # AWS's 16 KB user_data limit. The RDS + S3 lab is generated during bootstrap.
+  site_archive_base64 = ""
+  db_name             = var.db_name
+  db_username         = var.db_username
+  db_password         = var.db_password
+  db_host             = module.rds.db_endpoint
 
   wp_admin_user     = var.wp_admin_user
   wp_admin_password = var.wp_admin_password
   wp_admin_email    = var.wp_admin_email
+
+  s3_backup_bucket_name = module.backup_bucket.bucket_name
+  s3_backup_bucket_arn  = module.backup_bucket.bucket_arn
 }

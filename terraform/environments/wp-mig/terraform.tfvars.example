@@ -1,8 +1,49 @@
-# Example planning values for the future wp-mig environment.
-# This file is not used by deployable Terraform code yet.
-# Do not store client data, real domains under NDA, passwords, or exports here.
+# Example values for the wp-mig environment.
+# Copy this file to terraform.tfvars for local use, then replace placeholders.
+# Do not commit terraform.tfvars, client exports, database dumps, or real secrets.
 
-# aws_region = "us-east-1"
-# project_name = "wordpress-wp-mig"
-# source_domain = "example.com"
-# target_domain = "migration-target.example.com"
+aws_region = "us-east-1"
+
+project_name = "wordpress-wp-mig"
+
+vpc_cidr = "10.50.0.0/16"
+
+# Replace with your own public IP range before using SSH.
+# Example format: "203.0.113.10/32"
+allowed_ssh_cidr = "0.0.0.0/0"
+
+instance_type = "t3.micro"
+
+# Must match an existing EC2 key pair in the selected AWS region.
+key_name = "replace-with-your-key-pair"
+
+site_title = "Migrated WordPress Demo"
+
+# Kept for launcher compatibility. Migration files are moved by scripts instead
+# of being embedded into EC2 user_data.
+site_archive_path = ""
+
+db_name = "wordpress"
+
+# RDS master usernames must use letters/numbers only, start with a letter,
+# and be 16 characters or fewer.
+db_username = "wpmigadmin"
+
+# S3 bucket names must be globally unique.
+backup_bucket_name = "replace-with-globally-unique-wp-mig-artifact-bucket"
+
+# Planning placeholders for migration scripts and documentation.
+source_wordpress_url = "https://source.example.com"
+target_wordpress_url = "https://target.example.com"
+
+# Provide these values through an uncommitted terraform.tfvars file,
+# environment variables, or a secrets manager. Do not put real passwords here.
+# db_password = "replace-with-a-secure-local-only-value"
+
+# This is the username you use at /wp-admin/ on the new AWS target.
+wp_admin_user = "demo_admin"
+
+wp_admin_email = "admin@example.com"
+
+# Keep this different from db_password.
+# wp_admin_password = "replace-with-a-separate-secure-local-only-value"

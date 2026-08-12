@@ -136,7 +136,7 @@ choose_environment() {
   echo "Choose a demo path:"
   echo "  wp-lite  - active low-cost EC2 + local MariaDB demo"
   echo "  wp-rds   - active EC2 + private RDS MySQL + S3 backup bucket demo"
-  echo "  wp-mig   - reserved for the future WordPress migration workflow"
+  echo "  wp-mig   - active migration target using EC2 + private RDS MySQL + S3 artifacts"
   echo
 
   selected_environment="$(prompt_default "Environment: wp-lite, wp-rds, or wp-mig" "wp-lite")"
@@ -150,19 +150,6 @@ choose_environment() {
       exit 1
       ;;
   esac
-}
-
-# Displays information for placeholder environments that are not active yet.
-explain_reserved_environment() {
-  local environment="$1"
-
-  echo
-  echo "The $environment branch is recognized, but it is not active yet."
-  echo "Planned purpose: prepare future WordPress migration and rehosting workflows."
-  echo "Current recommendation: run ./scripts/prepare-migration.sh or ./scripts/check-migration-readiness.sh for migration planning."
-
-  echo
-  echo "No Terraform was initialized, planned, applied, or destroyed."
 }
 
 # Checks for required installs to make the chosen env work
@@ -180,16 +167,18 @@ run_wordpress_env_preflight() {
   fi
   echo "${GREEN}[ok]${RESET} Terraform environment folder found"
 
-  if [ ! -d "$WEBSITE_SOURCE" ]; then
-    echo "Static website folder does not exist: $WEBSITE_SOURCE"
-    exit 1
-  fi
+  if [ "$environment" != "wp-mig" ]; then
+    if [ ! -d "$WEBSITE_SOURCE" ]; then
+      echo "Static website folder does not exist: $WEBSITE_SOURCE"
+      exit 1
+    fi
 
-  if [ ! -f "$WEBSITE_SOURCE/index.html" ]; then
-    echo "Static website folder must contain an index.html file: $WEBSITE_SOURCE"
-    exit 1
+    if [ ! -f "$WEBSITE_SOURCE/index.html" ]; then
+      echo "Static website folder must contain an index.html file: $WEBSITE_SOURCE"
+      exit 1
+    fi
+    echo "${GREEN}[ok]${RESET} Static demo website folder found"
   fi
-  echo "${GREEN}[ok]${RESET} Static demo website folder found"
 
   if ! AWS_ACCOUNT_ID="$(aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" --query 'Account' --output text 2>/dev/null)"; then
     echo
@@ -274,15 +263,24 @@ deploy_wordpress_environment() {
   if [ "$environment" = "wp-rds" ]; then
     echo "wp-rds also creates a private RDS MySQL database and an S3 bucket reserved for backups."
     echo "${RED}Cost note: wp-rds costs more than wp-lite because RDS runs as a separate managed database.${RESET}"
+  elif [ "$environment" = "wp-mig" ]; then
+    echo "wp-mig creates a clean migration target with EC2, private RDS MySQL, and an S3 artifact bucket."
+    echo "Migration scripts should move database/content data, but should not copy old wp-config.php credentials."
+    echo "${RED}Cost note: wp-mig runs RDS and S3 like wp-rds. Destroy it after migration practice.${RESET}"
   fi
   echo
 
-  SITE_TITLE="$(prompt_default "Website display name" "Cloud WordPress Demo")"
-  USE_CUSTOM_STATIC_SITE="$(prompt_default "Use a custom static demo folder instead of website/default-site? yes or no" "no")"
-  if [ "$USE_CUSTOM_STATIC_SITE" = "yes" ]; then
-    WEBSITE_SOURCE="$(prompt_default "Custom static website folder path" "$ROOT_DIR/website/default-site")"
+  if [ "$environment" = "wp-mig" ]; then
+    SITE_TITLE="$(prompt_default "Migration target site display name" "Migrated WordPress Demo")"
+    WEBSITE_SOURCE=""
   else
-    WEBSITE_SOURCE="$ROOT_DIR/website/default-site"
+    SITE_TITLE="$(prompt_default "Website display name" "Cloud WordPress Demo")"
+    USE_CUSTOM_STATIC_SITE="$(prompt_default "Use a custom static demo folder instead of website/default-site? yes or no" "no")"
+    if [ "$USE_CUSTOM_STATIC_SITE" = "yes" ]; then
+      WEBSITE_SOURCE="$(prompt_default "Custom static website folder path" "$ROOT_DIR/website/default-site")"
+    else
+      WEBSITE_SOURCE="$ROOT_DIR/website/default-site"
+    fi
   fi
   AWS_PROFILE_NAME="$(prompt_default "AWS CLI profile name" "default")"
   AWS_REGION="$(prompt_default "AWS region" "us-east-1")"
@@ -301,18 +299,18 @@ deploy_wordpress_environment() {
 
   PROJECT_NAME="$(prompt_default "Terraform project/resource name" "${environment}-${PROJECT_SLUG}")"
   DB_NAME="$(prompt_default "WordPress database name" "wordpress")"
-  if [ "$environment" = "wp-rds" ]; then
-    default_db_username="wpadmin"
-  else
-    default_db_username="wordpress_user"
-  fi
+  case "$environment" in
+    wp-rds) default_db_username="wpadmin" ;;
+    wp-mig) default_db_username="wpmigadmin" ;;
+    *) default_db_username="wordpress_user" ;;
+  esac
   DB_USERNAME="$(prompt_default "WordPress database username" "$default_db_username")"
   WP_ADMIN_USER="$(prompt_default "WordPress admin username" "demo_admin")"
   WP_ADMIN_EMAIL="$(prompt_default "WordPress admin email" "admin@example.com")"
 
-  if [ "$environment" = "wp-rds" ]; then
+  if [ "$environment" = "wp-rds" ] || [ "$environment" = "wp-mig" ]; then
     default_backup_bucket_name="${PROJECT_NAME}-backups-${AWS_REGION}-${AWS_ACCOUNT_ID}"
-    BACKUP_BUCKET_NAME="$(prompt_default "Globally unique S3 backup bucket name" "$default_backup_bucket_name")"
+    BACKUP_BUCKET_NAME="$(prompt_default "Globally unique S3 backup/artifact bucket name" "$default_backup_bucket_name")"
   fi
 
   GENERATED_DB_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=' | cut -c 1-24)"
@@ -323,20 +321,23 @@ deploy_wordpress_environment() {
   WP_ADMIN_PASSWORD="$(prompt_secret "WordPress admin password for browser login (leave blank to generate one)")"
   WP_ADMIN_PASSWORD="${WP_ADMIN_PASSWORD:-$GENERATED_WP_ADMIN_PASSWORD}"
 
-  if [ "$environment" = "wp-rds" ]; then
+  if [ "$environment" = "wp-rds" ] || [ "$environment" = "wp-mig" ]; then
     validate_wp_rds_inputs
   fi
 
   GENERATED_DIR="$ROOT_DIR/.generated"
-  SITE_ARCHIVE="$GENERATED_DIR/${environment}-${PROJECT_SLUG}-site.zip"
+  SITE_ARCHIVE=""
 
   mkdir -p "$GENERATED_DIR"
-  echo
-  echo "Packaging static website from $WEBSITE_SOURCE"
-  (
-    cd "$WEBSITE_SOURCE"
-    zip -qr "$SITE_ARCHIVE" .
-  )
+  if [ "$environment" != "wp-mig" ]; then
+    SITE_ARCHIVE="$GENERATED_DIR/${environment}-${PROJECT_SLUG}-site.zip"
+    echo
+    echo "Packaging static website from $WEBSITE_SOURCE"
+    (
+      cd "$WEBSITE_SOURCE"
+      zip -qr "$SITE_ARCHIVE" .
+    )
+  fi
 
   echo
   echo "Writing local Terraform variables to $TFVARS_FILE"
@@ -356,7 +357,7 @@ wp_admin_email    = $(hcl_string "$WP_ADMIN_EMAIL")
 wp_admin_password = $(hcl_string "$WP_ADMIN_PASSWORD")
 VARS
 
-  if [ "$environment" = "wp-rds" ]; then
+  if [ "$environment" = "wp-rds" ] || [ "$environment" = "wp-mig" ]; then
     cat >> "$TFVARS_FILE" <<VARS
 backup_bucket_name = $(hcl_string "$BACKUP_BUCKET_NAME")
 VARS
@@ -392,6 +393,21 @@ VARS
   WORDPRESS_URL="$(terraform output -raw wordpress_url 2>/dev/null || true)"
   if [ -n "$WORDPRESS_URL" ]; then
     wait_for_wordpress "$WORDPRESS_URL" "$WP_ADMIN_USER" "$WP_ADMIN_PASSWORD" 80 15 || true
+    if [ "$environment" = "wp-rds" ]; then
+      echo
+      echo "wp-rds demo lab:"
+      echo "  RDS + S3 Lab: $WORDPRESS_URL/demo/rds-lab.php"
+      echo "  Log in with the WordPress admin credentials above before using the lab."
+    elif [ "$environment" = "wp-mig" ]; then
+      echo
+      echo "wp-mig migration target is ready."
+      echo "Recommended next steps:"
+      echo "  1. Run migration readiness checks:"
+      echo "     ./scripts/check-migration-readiness.sh --target-env wp-mig --profile $AWS_PROFILE_NAME --region $AWS_REGION"
+      echo "  2. Export a source WordPress database and wp-content package."
+      echo "  3. Restore into this target without copying old wp-config.php database credentials."
+      echo "  4. Validate the migrated site before DNS cutover."
+    fi
   else
     echo "Open the wordpress_url output in your browser for WordPress."
     echo "Open wordpress_url/demo/ for the static infrastructure demo."
@@ -419,10 +435,7 @@ run_local_preflight
 choose_environment
 
 case "$ENVIRONMENT" in
-  wp-lite | wp-rds)
+  wp-lite | wp-rds | wp-mig)
     deploy_wordpress_environment "$ENVIRONMENT"
-    ;;
-  wp-mig)
-    explain_reserved_environment "$ENVIRONMENT"
     ;;
 esac

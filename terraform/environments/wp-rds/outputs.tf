@@ -23,3 +23,8 @@ output "backup_bucket_name" {
   description = "S3 bucket reserved for backups."
   value       = module.backup_bucket.bucket_name
 }
+
+output "rds_s3_lab_url" {
+  description = "Admin-only demo page that writes rows to RDS and uploads files to S3."
+  value       = "http://${module.ec2.public_dns}/demo/rds-lab.php"
+}

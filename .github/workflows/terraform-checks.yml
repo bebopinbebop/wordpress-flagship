@@ -45,6 +45,7 @@ jobs:
         environment:
           - wp-lite
           - wp-rds
+          - wp-mig
 
     defaults:
       run:
@@ -64,14 +65,3 @@ jobs:
 
       - name: Terraform validate
         run: terraform validate
-
-  placeholders:
-    name: Placeholder Environment Notice
-    runs-on: ubuntu-latest
-    needs: quality
-
-    steps:
-      - name: Explain skipped placeholder environments
-        run: |
-          echo "terraform/environments/wp-mig is intentionally skipped."
-          echo "It is a placeholder scaffold for future WordPress migration workflows, not a real deployable Terraform root yet."

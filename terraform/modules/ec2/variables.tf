@@ -84,3 +84,15 @@ variable "wp_admin_email" {
   type        = string
   default     = "admin@example.com"
 }
+
+variable "s3_backup_bucket_name" {
+  description = "Optional S3 bucket name used by wp-rds demo uploads."
+  type        = string
+  default     = ""
+}
+
+variable "s3_backup_bucket_arn" {
+  description = "Optional S3 bucket ARN used to grant EC2 upload access for the wp-rds demo."
+  type        = string
+  default     = ""
+}

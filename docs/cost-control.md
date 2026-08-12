@@ -25,6 +25,17 @@ Cost controls:
 - Watch snapshot and S3 storage growth.
 - Keep NAT Gateway, Load Balancer, and CloudFront out until they are needed.
 
+## wp-mig
+
+`wp-mig` has a similar cost profile to `wp-rds` because it provisions EC2, RDS, and S3 as a migration target.
+
+Cost controls:
+
+- Use it only while practicing or demonstrating migration.
+- Destroy it after validation or recording a portfolio demo.
+- Keep migration artifacts small and remove unneeded S3 objects.
+- Avoid storing client database dumps longer than necessary.
+
 ## AWS Budget Suggestions
 
 - Create an AWS Budget for monthly spend.
@@ -40,10 +51,24 @@ Use the cleanup helper to destroy Terraform-managed demo resources:
 ./scripts/destroy-stack.sh --env wp-lite --profile your-profile-name
 ```
 
+For the RDS-backed environment, use:
+
+```bash
+./scripts/destroy-stack.sh --env wp-rds --profile your-profile-name
+```
+
+For the migration environment, use:
+
+```bash
+./scripts/destroy-stack.sh --env wp-mig --profile your-profile-name
+```
+
+This removes the Terraform-managed EC2 instance, RDS database, S3 backup/artifact bucket, IAM role/profile, networking, and security groups. The demo S3 bucket is configured with `force_destroy` so uploaded lab files do not block cleanup.
+
 Use scan-only mode before or after cleanup:
 
 ```bash
-./scripts/destroy-stack.sh --scan-only --profile your-profile-name
+./scripts/destroy-stack.sh --env wp-rds --scan-only --profile your-profile-name
 ```
 
-The script prefers `terraform destroy` because Terraform understands resource dependencies. It also shows tagged AWS resources that may still cost money, such as EC2 instances, EBS volumes, RDS databases, NAT gateways, and load balancers.
+The script prefers `terraform destroy` because Terraform understands resource dependencies. It also shows tagged AWS resources that may still cost money, such as EC2 instances, EBS volumes, RDS databases, NAT gateways, load balancers, IAM roles, instance profiles, and the configured S3 backup bucket.

@@ -30,6 +30,19 @@ After the instance finishes bootstrapping:
 - Visit `/` for the WordPress site.
 - Visit `/wp-admin/` for WordPress admin.
 - Visit `/demo/` for the static Terraform/AWS demo pages.
+- Visit `/demo/rds-lab.php` for the admin-only RDS + S3 lab.
+
+## RDS + S3 Lab
+
+The `wp-rds` bootstrap creates an admin-only demo page at `/demo/rds-lab.php`.
+
+This page lets a WordPress administrator:
+
+- Add simple demo rows to the RDS-backed WordPress database.
+- Edit row text and status values.
+- Upload a file to the S3 backup bucket and link the S3 URI to a database row.
+
+This is meant to make the RDS and S3 backend visible during portfolio demos. It is not a production file manager.
 
 Manual deployment:
 
@@ -54,10 +67,18 @@ ssh ubuntu@your-instance-public-dns "chmod +x /tmp/seed-wordpress.sh && sudo SIT
 ## Destroy
 
 ```bash
-terraform destroy
+./scripts/destroy-stack.sh --env wp-rds --profile your-profile-name
 ```
 
-The wp-rds environment costs more than wp-lite because RDS runs as a separate managed database.
+The `wp-rds` environment costs more than `wp-lite` because RDS runs as a separate managed database. The destroy helper removes the Terraform-managed EC2 instance, RDS database, S3 backup bucket, IAM role/profile, VPC resources, and security groups.
+
+The S3 bucket is configured for demo cleanup with `force_destroy`, which allows Terraform to delete uploaded lab files during `terraform destroy`. Do not use this setting for production buckets that must preserve client backups.
+
+To inspect possible project resources without deleting anything:
+
+```bash
+./scripts/destroy-stack.sh --env wp-rds --scan-only --profile your-profile-name
+```
 
 ## Diagnose
 

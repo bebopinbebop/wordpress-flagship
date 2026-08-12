@@ -1,26 +1,35 @@
-# wp-mig Environment Scaffold
+# wp-mig Environment
 
-`wp-mig` is a future migration-focused environment.
+`wp-mig` is the migration target environment for the WordPress Flagship project.
 
-It is intentionally not deployable yet. The purpose of this folder is to reserve a clear Terraform workspace for future WordPress client migration workflows.
+It provisions a clean AWS-hosted WordPress target that can receive content from an existing WordPress installation. The first practical demo path is:
 
-## Intended Purpose
+```text
+source WordPress -> export database and wp-content -> wp-mig target -> restore -> validate
+```
 
-- Stage a clean AWS target for importing an existing WordPress site.
-- Keep migration-specific variables separate from `wp-lite` and `wp-rds`.
-- Support repeatable client rehosting workflows.
-- Track migration readiness before any DNS cutover.
+## Architecture
 
-## Future Resources
+- Custom VPC with public and private subnets.
+- EC2 WordPress server in a public subnet.
+- Private RDS MySQL database for WordPress data.
+- S3 bucket for migration artifacts, backups, and rollback material.
+- IAM instance profile that allows the EC2 instance to access the migration bucket.
 
-This environment will likely build on the `wp-rds` architecture:
+This intentionally reuses the same shared modules as `wp-rds` so the migration path does not duplicate infrastructure logic.
 
-- EC2 WordPress server.
-- RDS MySQL database in private subnets.
-- S3 bucket for backups and migration artifacts.
-- Optional temporary import storage.
-- Future HTTPS and domain support when production hardening is added.
+## Migration Rule
 
-## Current Status
+Do not blindly copy the old `wp-config.php` into this environment.
 
-Placeholder only. Use `docs/wp-mig-guide.md` and `scripts/prepare-migration.sh` for planning until this environment is implemented.
+Migration scripts should preserve content and database data, but the target must keep the database hostname, username, password, salts, and AWS-specific settings created for this deployment.
+
+## Local Use
+
+Copy `terraform.tfvars.example` to `terraform.tfvars`, replace placeholders locally, then run through `scripts/start-demo.sh` and choose `wp-mig`.
+
+For cleanup:
+
+```bash
+./scripts/destroy-stack.sh --env wp-mig --profile your-profile-name
+```

@@ -8,3 +8,8 @@ variable "bucket_name" {
   type        = string
 }
 
+variable "force_destroy" {
+  description = "When true, Terraform can delete non-empty demo buckets during destroy."
+  type        = bool
+  default     = true
+}

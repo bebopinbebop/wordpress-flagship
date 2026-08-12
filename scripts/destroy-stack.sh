@@ -20,7 +20,7 @@ usage() {
 Usage: ./scripts/destroy-stack.sh [options]
 
 Options:
-  --env ENV          Environment to destroy: wp-lite, wp-rds, or all.
+  --env ENV          Environment to destroy: wp-lite, wp-rds, wp-mig, or all.
                      Default: wp-lite.
   --profile NAME    AWS CLI profile to use. Default: AWS_PROFILE or default.
   --region REGION   AWS region to scan. Default: us-east-1.
@@ -31,8 +31,15 @@ Options:
 Examples:
   ./scripts/destroy-stack.sh --env wp-lite
   ./scripts/destroy-stack.sh --env wp-rds --profile my-sso
+  ./scripts/destroy-stack.sh --env wp-mig --profile my-sso
   ./scripts/destroy-stack.sh --env all
   ./scripts/destroy-stack.sh --scan-only --profile my-sso
+
+wp-rds/wp-mig cleanup:
+  Terraform destroys the EC2 instance, RDS database, S3 bucket, IAM role/profile,
+  VPC, subnets, route tables, internet gateway, and security groups that are in
+  the local Terraform state. The S3 backup bucket is configured for demo cleanup
+  with force_destroy so uploaded lab files do not block bucket deletion.
 USAGE
 }
 
@@ -77,6 +84,7 @@ project_name_for_env() {
   case "$env_name" in
     wp-lite) echo "wordpress-wp-lite" ;;
     wp-rds) echo "wordpress-wp-rds" ;;
+    wp-mig) echo "wordpress-wp-mig" ;;
     *) echo "$env_name" ;;
   esac
 }
@@ -85,10 +93,10 @@ validate_environment() {
   local env_name="$1"
 
   case "$env_name" in
-    wp-lite|wp-rds|all) ;;
+    wp-lite|wp-rds|wp-mig|all) ;;
     *)
       echo "Unknown environment: $env_name"
-      echo "Use wp-lite, wp-rds, or all."
+      echo "Use wp-lite, wp-rds, wp-mig, or all."
       exit 1
       ;;
   esac
@@ -96,7 +104,7 @@ validate_environment() {
 
 environments_to_process() {
   if [ "$TARGET_ENVIRONMENT" = "all" ]; then
-    echo "wp-lite wp-rds"
+    echo "wp-lite wp-rds wp-mig"
   else
     echo "$TARGET_ENVIRONMENT"
   fi
@@ -113,7 +121,8 @@ check_aws_auth() {
 }
 
 scan_project_resources() {
-  local project_name="$1"
+  local env_name="$1"
+  local project_name="$2"
 
   echo
   echo "AWS resources tagged Project=$project_name in $AWS_REGION"
@@ -145,6 +154,14 @@ scan_project_resources() {
     --output table || true
 
   echo
+  echo "RDS snapshots matching this project name:"
+  aws rds describe-db-snapshots \
+    --profile "$AWS_PROFILE_NAME" \
+    --region "$AWS_REGION" \
+    --query "DBSnapshots[?contains(DBSnapshotIdentifier, '$project_name')].{DBSnapshotIdentifier:DBSnapshotIdentifier,Status:Status,Engine:Engine,AllocatedStorageGiB:AllocatedStorage}" \
+    --output table || true
+
+  echo
   echo "NAT gateways:"
   aws ec2 describe-nat-gateways \
     --profile "$AWS_PROFILE_NAME" \
@@ -154,7 +171,7 @@ scan_project_resources() {
     --output table || true
 
   echo
-  echo "Load balancers tagged with this project:"
+  echo "Load balancers in this region:"
   aws elbv2 describe-load-balancers \
     --profile "$AWS_PROFILE_NAME" \
     --region "$AWS_REGION" \
@@ -163,8 +180,22 @@ scan_project_resources() {
   cat /tmp/wordpress-flagship-lbs.txt
 
   echo
-  echo "S3 buckets are global. Check this project bucket name if wp-rds was used:"
-  local env_dir="$ENV_ROOT/wp-rds"
+  echo "IAM roles matching this project name:"
+  aws iam list-roles \
+    --profile "$AWS_PROFILE_NAME" \
+    --query "Roles[?contains(RoleName, '$project_name')].{RoleName:RoleName,Arn:Arn}" \
+    --output table || true
+
+  echo
+  echo "IAM instance profiles matching this project name:"
+  aws iam list-instance-profiles \
+    --profile "$AWS_PROFILE_NAME" \
+    --query "InstanceProfiles[?contains(InstanceProfileName, '$project_name')].{InstanceProfileName:InstanceProfileName,Arn:Arn}" \
+    --output table || true
+
+  echo
+  echo "S3 bucket check:"
+  local env_dir="$ENV_ROOT/$env_name"
   local bucket_name
   bucket_name="$(read_tfvar "$env_dir" "backup_bucket_name")"
   if [ -n "$bucket_name" ]; then
@@ -172,7 +203,24 @@ scan_project_resources() {
       && echo "Found S3 bucket: $bucket_name" \
       || echo "No accessible S3 bucket found named: $bucket_name"
   else
-    echo "No local wp-rds backup_bucket_name found in terraform.tfvars."
+    echo "No backup_bucket_name found for $env_name."
+  fi
+}
+
+explain_destroy_scope() {
+  local env_name="$1"
+
+  echo
+  echo "Destroy scope for $env_name:"
+  if [ "$env_name" = "wp-rds" ] || [ "$env_name" = "wp-mig" ]; then
+    echo "- EC2 WordPress instance and attached EBS root volume"
+    echo "- Private RDS MySQL database"
+    echo "- S3 backup/artifact bucket and demo uploads tracked by Terraform"
+    echo "- EC2 IAM role, policy, and instance profile for S3 access"
+    echo "- VPC, public/private subnets, route table, internet gateway, and security groups"
+  else
+    echo "- EC2 WordPress instance and attached EBS root volume"
+    echo "- VPC, public/private subnets, route table, internet gateway, and security groups"
   fi
 }
 
@@ -202,7 +250,7 @@ destroy_environment() {
 
   project_name="$(project_name_for_env "$env_name")"
   show_terraform_state "$env_name"
-  scan_project_resources "$project_name"
+  scan_project_resources "$env_name" "$project_name"
 
   if [ "$SCAN_ONLY" = "true" ]; then
     return
@@ -220,6 +268,7 @@ destroy_environment() {
   echo "Project tag/name: $project_name"
   echo "AWS profile: $AWS_PROFILE_NAME"
   echo "AWS region: $AWS_REGION"
+  explain_destroy_scope "$env_name"
 
   if [ "$AUTO_APPROVE" != "true" ]; then
     local confirm
@@ -233,6 +282,10 @@ destroy_environment() {
   echo
   echo "Running terraform destroy for $env_name..."
   (cd "$env_dir" && AWS_PROFILE="$AWS_PROFILE_NAME" terraform destroy -auto-approve)
+
+  echo
+  echo "Post-destroy scan for $env_name:"
+  scan_project_resources "$env_name" "$project_name"
 }
 
 while [ "$#" -gt 0 ]; do
