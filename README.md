@@ -87,6 +87,12 @@ There are requirements to make this project work, as described below:
 
 
 
+## Bash Path Portability
+
+The guided scripts are Bash-first and are intended for Linux, WSL2, and Bash-compatible shells. They resolve the project root dynamically from Git when possible, so the project does not depend on a specific checkout folder such as `/mnt/c/Users/<username>/...`.
+
+Generated demo artifacts are written under the ignored `.generated/` folder at the project root. When the launcher writes local `terraform.tfvars`, archive paths are stored relative to the Terraform environment folder instead of using machine-specific absolute paths.
+
 ## Deliverables
 
 
@@ -222,6 +228,31 @@ For the current MVP, keep these values local:
 - AWS CLI profile configuration.
 
 Future production work should move secrets into AWS Secrets Manager or AWS Systems Manager Parameter Store.
+
+## Resource Identity
+
+AWS resources are being organized around a standard tag identity model:
+
+```text
+Project -> Architecture -> Deployment -> Resource
+```
+
+Example tags:
+
+```text
+Project      = wordpress-flagship
+Architecture = wp-rds
+Deployment   = demo-001
+ManagedBy    = terraform
+```
+
+This model is intended to improve resource discovery, cleanup verification, troubleshooting, and future cost reporting. See [docs/tagging-architecture.md](docs/tagging-architecture.md).
+
+Read-only resource discovery is available with:
+
+```bash
+./scripts/resources.sh list --architecture wp-lite --deployment wp-lite-test
+```
 
 ## TODO
 

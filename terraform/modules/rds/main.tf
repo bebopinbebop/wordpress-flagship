@@ -1,11 +1,17 @@
+locals {
+  module_tags = length(var.common_tags) > 0 ? var.common_tags : {
+    Project = var.project_name
+  }
+}
+
 resource "aws_db_subnet_group" "this" {
   name       = "${var.project_name}-db-subnet-group"
   subnet_ids = var.private_subnet_ids
 
-  tags = {
-    Name    = "${var.project_name}-db-subnet-group"
-    Project = var.project_name
-  }
+  tags = merge(local.module_tags, {
+    Name      = "${var.project_name}-db-subnet-group"
+    Component = "database"
+  })
 }
 
 resource "aws_db_instance" "mysql" {
@@ -25,8 +31,8 @@ resource "aws_db_instance" "mysql" {
   delete_automated_backups = var.delete_automated_backups
   skip_final_snapshot      = var.skip_final_snapshot
 
-  tags = {
-    Name    = "${var.project_name}-mysql"
-    Project = var.project_name
-  }
+  tags = merge(local.module_tags, {
+    Name      = "${var.project_name}-mysql"
+    Component = "database"
+  })
 }

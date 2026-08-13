@@ -1,3 +1,9 @@
+locals {
+  module_tags = length(var.common_tags) > 0 ? var.common_tags : {
+    Project = var.project_name
+  }
+}
+
 resource "aws_security_group" "wordpress" {
   name        = "${var.project_name}-wordpress-sg"
   description = "Allow web and optional SSH access to the WordPress EC2 instance."
@@ -27,10 +33,10 @@ resource "aws_security_group" "wordpress" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name    = "${var.project_name}-wordpress-sg"
-    Project = var.project_name
-  }
+  tags = merge(local.module_tags, {
+    Name      = "${var.project_name}-wordpress-sg"
+    Component = "security"
+  })
 }
 
 resource "aws_security_group" "database" {
@@ -54,9 +60,8 @@ resource "aws_security_group" "database" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name    = "${var.project_name}-database-sg"
-    Project = var.project_name
-  }
+  tags = merge(local.module_tags, {
+    Name      = "${var.project_name}-database-sg"
+    Component = "security"
+  })
 }
-

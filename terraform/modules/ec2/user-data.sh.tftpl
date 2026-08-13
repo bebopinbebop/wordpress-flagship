@@ -23,7 +23,6 @@ echo "Starting WordPress bootstrap for $${SITE_TITLE}..."
 apt-get update -y
 apt-get install -y apache2 mysql-client unzip curl rsync php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip
 
-%{ if s3_backup_bucket_name != "" }
 if [ "$${INSTALL_MODE}" = "rds" ] && [ -n "$${S3_BACKUP_BUCKET}" ]; then
   apt-get install -y awscli
 fi
@@ -105,6 +104,7 @@ if [ ! -f /var/www/html/demo/index.html ]; then
 HTML
 fi
 
+%{ if s3_backup_bucket_name != "" }
 if [ "$${INSTALL_MODE}" = "rds" ] && [ -n "$${S3_BACKUP_BUCKET}" ]; then
   sudo -u www-data wp menu item add-custom "Primary Navigation" "RDS + S3 Lab" "$${SITE_URL}/demo/rds-lab.php" --path=/var/www/html || true
   cat > /var/www/html/demo/rds-lab.php <<'PHP'

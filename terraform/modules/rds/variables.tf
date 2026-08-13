@@ -13,6 +13,12 @@ variable "database_sg_id" {
   type        = string
 }
 
+variable "common_tags" {
+  description = "Standard tags applied to taggable resources in this module."
+  type        = map(string)
+  default     = {}
+}
+
 variable "db_name" {
   description = "Initial MySQL database name."
   type        = string

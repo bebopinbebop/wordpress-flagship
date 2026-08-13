@@ -23,6 +23,18 @@ variable "key_name" {
   type        = string
 }
 
+variable "common_tags" {
+  description = "Standard tags applied to taggable resources in this module."
+  type        = map(string)
+  default     = {}
+}
+
+variable "tag_root_volume" {
+  description = "When true, apply standard identity tags to the EC2 root EBS volume at launch."
+  type        = bool
+  default     = false
+}
+
 variable "install_mode" {
   description = "WordPress install mode. Use local-db for wp-lite or rds for wp-rds."
   type        = string

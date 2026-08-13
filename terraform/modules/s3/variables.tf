@@ -8,6 +8,12 @@ variable "bucket_name" {
   type        = string
 }
 
+variable "common_tags" {
+  description = "Standard tags applied to taggable resources in this module."
+  type        = map(string)
+  default     = {}
+}
+
 variable "force_destroy" {
   description = "When true, Terraform can delete non-empty demo buckets during destroy."
   type        = bool

@@ -10,6 +10,17 @@ variable "project_name" {
   default     = "wordpress-wp-rds"
 }
 
+variable "deployment_name" {
+  description = "Unique deployment identifier used by the standard tagging model. Defaults to project_name when left blank."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.deployment_name == "" || can(regex("^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$", var.deployment_name))
+    error_message = "deployment_name must be blank or a lowercase kebab-case value between 3 and 64 characters."
+  }
+}
+
 variable "vpc_cidr" {
   description = "CIDR block for the custom VPC."
   type        = string

@@ -5,8 +5,11 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_DIR="$ROOT_DIR/terraform/environments/wp-lite"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/project-paths.sh
+source "$SCRIPT_DIR/lib/project-paths.sh"
+PROJECT_ROOT="$(resolve_project_root "$SCRIPT_DIR" "$SCRIPT_DIR/..")"
+ENV_DIR="$(terraform_environment_dir "wp-lite")"
 AWS_PROFILE_NAME="${AWS_PROFILE:-default}"
 
 echo "Diagnosing wp-lite using AWS profile: $AWS_PROFILE_NAME"
@@ -65,4 +68,3 @@ echo
 echo "If HTTP fails but the instance is running, SSH in and check:"
 echo "  sudo tail -n 120 /var/log/wordpress-bootstrap.log"
 echo "  sudo systemctl status apache2 --no-pager"
-

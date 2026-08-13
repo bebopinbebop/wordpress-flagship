@@ -5,8 +5,11 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUTPUT_DIR="$ROOT_DIR/.generated/migrations"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/project-paths.sh
+source "$SCRIPT_DIR/lib/project-paths.sh"
+PROJECT_ROOT="$(resolve_project_root "$SCRIPT_DIR" "$SCRIPT_DIR/..")"
+OUTPUT_DIR="$(project_path ".generated/migrations")"
 
 prompt_default() {
   local label="$1"
@@ -105,4 +108,3 @@ PLAN
 
 echo "Created migration checklist:"
 echo "$PLAN_FILE"
-

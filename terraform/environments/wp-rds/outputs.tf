@@ -28,3 +28,18 @@ output "rds_s3_lab_url" {
   description = "Admin-only demo page that writes rows to RDS and uploads files to S3."
   value       = "http://${module.ec2.public_dns}/demo/rds-lab.php"
 }
+
+output "architecture" {
+  description = "WordPress Flagship architecture identifier."
+  value       = local.architecture
+}
+
+output "deployment_name" {
+  description = "Unique deployment identifier used by the standard tagging model."
+  value       = local.deployment_name
+}
+
+output "common_tags" {
+  description = "Standard non-sensitive tags planned for WordPress Flagship AWS resources."
+  value       = local.common_tags
+}

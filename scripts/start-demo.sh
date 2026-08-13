@@ -8,8 +8,11 @@
 
 set -euo pipefail
 
-# Find project root for reference to run commands
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Find project root for reference to run commands.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/project-paths.sh
+source "$SCRIPT_DIR/lib/project-paths.sh"
+PROJECT_ROOT="$(resolve_project_root "$SCRIPT_DIR" "$SCRIPT_DIR/..")"
 
 # Sets terminal text color, with a reset back to original color
 GREEN="$(printf '\033[32m')"
@@ -253,6 +256,18 @@ validate_wp_rds_inputs() {
   fi
 }
 
+validate_deployment_name() {
+  local deployment_name="$1"
+
+  if [[ ! "$deployment_name" =~ ^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$ ]]; then
+    echo
+    echo "Terraform project/resource name also becomes the Deployment tag."
+    echo "Use lowercase kebab-case, 3-64 characters, with letters, numbers, and hyphens only."
+    echo "Example: wp-lite-client-demo"
+    exit 1
+  fi
+}
+
 # Setting variables for the user to input, to then call Terraform and build the stack in AWS.
 deploy_wordpress_environment() {
   local environment="$1"
@@ -277,9 +292,9 @@ deploy_wordpress_environment() {
     SITE_TITLE="$(prompt_default "Website display name" "Cloud WordPress Demo")"
     USE_CUSTOM_STATIC_SITE="$(prompt_default "Use a custom static demo folder instead of website/default-site? yes or no" "no")"
     if [ "$USE_CUSTOM_STATIC_SITE" = "yes" ]; then
-      WEBSITE_SOURCE="$(prompt_default "Custom static website folder path" "$ROOT_DIR/website/default-site")"
+      WEBSITE_SOURCE="$(prompt_default "Custom static website folder path" "$(project_path "website/default-site")")"
     else
-      WEBSITE_SOURCE="$ROOT_DIR/website/default-site"
+      WEBSITE_SOURCE="$(project_path "website/default-site")"
     fi
   fi
   AWS_PROFILE_NAME="$(prompt_default "AWS CLI profile name" "default")"
@@ -287,7 +302,7 @@ deploy_wordpress_environment() {
   KEY_NAME="$(prompt_default "Existing EC2 key pair name" "replace-with-your-key-pair")"
   ALLOWED_SSH_CIDR="$(prompt_default "SSH allowed CIDR" "0.0.0.0/0")"
   INSTANCE_TYPE="$(prompt_default "EC2 instance type" "t3.micro")"
-  ENV_DIR="$ROOT_DIR/terraform/environments/$environment"
+  ENV_DIR="$(terraform_environment_dir "$environment")"
   TFVARS_FILE="$ENV_DIR/terraform.tfvars"
 
   run_wordpress_env_preflight "$environment"
@@ -298,6 +313,7 @@ deploy_wordpress_environment() {
   fi
 
   PROJECT_NAME="$(prompt_default "Terraform project/resource name" "${environment}-${PROJECT_SLUG}")"
+  validate_deployment_name "$PROJECT_NAME"
   DB_NAME="$(prompt_default "WordPress database name" "wordpress")"
   case "$environment" in
     wp-rds) default_db_username="wpadmin" ;;
@@ -325,12 +341,14 @@ deploy_wordpress_environment() {
     validate_wp_rds_inputs
   fi
 
-  GENERATED_DIR="$ROOT_DIR/.generated"
+  GENERATED_DIR="$(generated_dir)"
   SITE_ARCHIVE=""
+  SITE_ARCHIVE_TFVARS=""
 
   mkdir -p "$GENERATED_DIR"
   if [ "$environment" != "wp-mig" ]; then
     SITE_ARCHIVE="$GENERATED_DIR/${environment}-${PROJECT_SLUG}-site.zip"
+    SITE_ARCHIVE_TFVARS="../../../.generated/${environment}-${PROJECT_SLUG}-site.zip"
     echo
     echo "Packaging static website from $WEBSITE_SOURCE"
     (
@@ -344,11 +362,12 @@ deploy_wordpress_environment() {
   cat > "$TFVARS_FILE" <<VARS
 aws_region        = $(hcl_string "$AWS_REGION")
 project_name      = $(hcl_string "$PROJECT_NAME")
+deployment_name   = $(hcl_string "$PROJECT_NAME")
 allowed_ssh_cidr  = $(hcl_string "$ALLOWED_SSH_CIDR")
 instance_type     = $(hcl_string "$INSTANCE_TYPE")
 key_name          = $(hcl_string "$KEY_NAME")
 site_title        = $(hcl_string "$SITE_TITLE")
-site_archive_path = $(hcl_string "$SITE_ARCHIVE")
+site_archive_path = $(hcl_string "$SITE_ARCHIVE_TFVARS")
 db_name           = $(hcl_string "$DB_NAME")
 db_username       = $(hcl_string "$DB_USERNAME")
 db_password       = $(hcl_string "$DB_PASSWORD")

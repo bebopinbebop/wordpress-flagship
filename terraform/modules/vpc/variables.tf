@@ -8,3 +8,8 @@ variable "vpc_cidr" {
   type        = string
 }
 
+variable "common_tags" {
+  description = "Standard tags applied to taggable resources in this module."
+  type        = map(string)
+  default     = {}
+}

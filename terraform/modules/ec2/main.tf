@@ -14,6 +14,10 @@ data "aws_ami" "ubuntu" {
 }
 
 locals {
+  module_tags = length(var.common_tags) > 0 ? var.common_tags : {
+    Project = var.project_name
+  }
+
   wordpress_user_data = templatefile("${path.module}/user-data.sh.tftpl", {
     install_mode = var.install_mode
     site_title   = var.site_title
@@ -67,10 +71,10 @@ resource "aws_iam_role" "wordpress_s3" {
   name               = "${var.project_name}-wordpress-s3-role"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume_role[0].json
 
-  tags = {
-    Name    = "${var.project_name}-wordpress-s3-role"
-    Project = var.project_name
-  }
+  tags = merge(local.module_tags, {
+    Name      = "${var.project_name}-wordpress-s3-role"
+    Component = "iam"
+  })
 }
 
 resource "aws_iam_role_policy" "wordpress_s3" {
@@ -86,20 +90,30 @@ resource "aws_iam_instance_profile" "wordpress_s3" {
 
   name = "${var.project_name}-wordpress-s3-profile"
   role = aws_iam_role.wordpress_s3[0].name
+
+  tags = merge(local.module_tags, {
+    Name      = "${var.project_name}-wordpress-s3-profile"
+    Component = "iam"
+  })
 }
 
 resource "aws_instance" "wordpress" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.instance_type
-  subnet_id              = var.public_subnet_id
-  vpc_security_group_ids = [var.wordpress_sg_id]
-  key_name               = var.key_name
-  iam_instance_profile   = var.enable_s3_access ? aws_iam_instance_profile.wordpress_s3[0].name : null
-  user_data              = local.wordpress_user_data
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.instance_type
+  subnet_id                   = var.public_subnet_id
+  vpc_security_group_ids      = [var.wordpress_sg_id]
+  key_name                    = var.key_name
+  iam_instance_profile        = var.enable_s3_access ? aws_iam_instance_profile.wordpress_s3[0].name : null
+  user_data                   = local.wordpress_user_data
+  user_data_replace_on_change = true
+  volume_tags = var.tag_root_volume ? merge(local.module_tags, {
+    Name      = "${var.project_name}-wordpress-root"
+    Component = "storage"
+  }) : null
 
-  tags = {
-    Name    = "${var.project_name}-wordpress"
-    Project = var.project_name
-    Site    = var.site_title
-  }
+  tags = merge(local.module_tags, {
+    Name      = "${var.project_name}-wordpress"
+    Component = "compute"
+    Site      = var.site_title
+  })
 }

@@ -7,8 +7,11 @@
 
 set -Eeuo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_ROOT="$ROOT_DIR/terraform/environments"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/project-paths.sh
+source "$SCRIPT_DIR/lib/project-paths.sh"
+PROJECT_ROOT="$(resolve_project_root "$SCRIPT_DIR" "$SCRIPT_DIR/..")"
+ENV_ROOT="$(project_path "terraform/environments")"
 
 AWS_PROFILE_NAME="${AWS_PROFILE:-default}"
 AWS_REGION="us-east-1"

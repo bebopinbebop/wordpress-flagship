@@ -13,6 +13,19 @@ provider "aws" {
   region = var.aws_region
 }
 
+locals {
+  architecture    = "wp-mig"
+  deployment_name = var.deployment_name != "" ? var.deployment_name : var.project_name
+
+  common_tags = {
+    Project      = "wordpress-flagship"
+    Architecture = local.architecture
+    Deployment   = local.deployment_name
+    ManagedBy    = "terraform"
+    Purpose      = "wordpress-demo"
+  }
+}
+
 # wp-mig is the migration target environment.
 # It intentionally reuses the wp-rds-style architecture so migration demos have
 # a realistic split between the WordPress web server, RDS database, and S3.
@@ -21,6 +34,7 @@ module "vpc" {
 
   project_name = var.project_name
   vpc_cidr     = var.vpc_cidr
+  common_tags  = local.common_tags
 }
 
 module "security" {
@@ -29,6 +43,7 @@ module "security" {
   project_name     = var.project_name
   vpc_id           = module.vpc.vpc_id
   allowed_ssh_cidr = var.allowed_ssh_cidr
+  common_tags      = local.common_tags
 }
 
 module "rds" {
@@ -41,6 +56,7 @@ module "rds" {
   db_username         = var.db_username
   db_password         = var.db_password
   skip_final_snapshot = true
+  common_tags         = local.common_tags
 }
 
 module "migration_bucket" {
@@ -48,6 +64,7 @@ module "migration_bucket" {
 
   project_name = var.project_name
   bucket_name  = var.backup_bucket_name
+  common_tags  = local.common_tags
 }
 
 module "ec2" {
@@ -58,6 +75,8 @@ module "ec2" {
   wordpress_sg_id  = module.security.wordpress_sg_id
   instance_type    = var.instance_type
   key_name         = var.key_name
+  common_tags      = local.common_tags
+  tag_root_volume  = true
   install_mode     = "rds"
   site_title       = var.site_title
 
