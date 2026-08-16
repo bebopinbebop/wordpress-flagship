@@ -57,6 +57,42 @@ The workflow should not blindly copy:
 - Private keys, AWS credentials, or production secrets.
 - Client database dumps into Git.
 
+## First Supported Flow
+
+The first implemented migration path is:
+
+```text
+wp-lite source deployment -> wp-mig target deployment
+```
+
+Terminology:
+
+- `source_deployment`: the existing `wp-lite` deployment being exported.
+- `target_deployment`: the `wp-mig` deployment that will later receive the migrated data.
+- `migration_id`: one unique migration attempt, separate from source or target deployment names.
+- `migration artifact`: local generated files that represent one migration attempt.
+
+The migration ID is generated from the source deployment, target deployment, and UTC timestamp:
+
+```text
+<source-deployment>-to-<target-deployment>-<YYYYMMDDTHHMMSSZ>
+```
+
+The first artifact layout is:
+
+```text
+.generated/
+└── migrations/
+    └── <migration-id>/
+        ├── database.sql.gz
+        ├── manifest.json
+        └── checksums.sha256
+```
+
+This first step exports only the source database. `wp-content.tar.gz`, S3 upload, target restore, URL replacement, validation, and rollback are later phases.
+
+Migration artifacts must not contain AWS credentials, private SSH keys, Terraform state, database passwords, source `wp-config.php`, or `.env` secrets. The `.generated/` folder is ignored by Git.
+
 ## Step 1: Provision The Target
 
 Run the normal launcher:
@@ -75,7 +111,31 @@ This provisions the AWS migration target: EC2, private RDS MySQL, S3, VPC networ
 
 ## Step 2: Run Migration Preflight
 
-Before moving data, run the read-only migration worker:
+Before moving data, run the read-only `wp-lite` source preflight:
+
+```bash
+./scripts/migration/source-preflight.sh \
+  --source-env wp-lite \
+  --ssh-key ~/.ssh/your-ec2-key.pem
+```
+
+This preflight checks WordPress-specific readiness. It does not treat an Apache HTTP 200 response as proof that WordPress is installed. It verifies files and directories such as:
+
+```text
+/var/www/html/wp-load.php
+/var/www/html/wp-admin
+/var/www/html/wp-content
+/var/www/html/wp-config.php
+```
+
+It also uses WP-CLI on the source EC2 instance to run:
+
+```bash
+wp core is-installed
+wp db check
+```
+
+The older general readiness worker is still useful for broad workstation and target checks:
 
 ```bash
 ./scripts/check-migration-readiness.sh --target-env wp-mig --profile your-profile-name --region us-east-1
@@ -102,21 +162,36 @@ The preflight checks:
 
 ## Step 3: Export Source
 
-Future export automation should create:
+Export the source database:
+
+```bash
+./scripts/migration/export-source-db.sh \
+  --source-env wp-lite \
+  --target-env wp-mig \
+  --ssh-key ~/.ssh/your-ec2-key.pem
+```
+
+This creates:
 
 - A database dump.
-- A compressed `wp-content` archive.
 - Migration metadata.
 - Checksums.
-- A migration log.
 
-Recommended artifact location:
+Current artifact location:
 
 ```text
-.generated/migrations/<project-slug>/
+.generated/migrations/<migration-id>/
 ```
 
 These files are ignored by Git because they may contain client data.
+
+The database export uses WP-CLI on the source EC2 instance and streams the SQL dump over SSH into a local compressed file:
+
+```text
+database.sql.gz
+```
+
+The script then writes a non-sensitive `manifest.json` and verifies `checksums.sha256`.
 
 ## Step 4: Restore Into Target
 
