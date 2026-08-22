@@ -156,9 +156,23 @@ check_target_environment() {
   instance_id="$(terraform_output_optional "$env_dir" instance_id)"
   migration_bucket="$(terraform_output_optional "$env_dir" migration_bucket_name)"
 
-  [ -n "$wordpress_url" ] && ok "Target WordPress URL output found: $wordpress_url" || warn "wordpress_url output not available yet"
-  [ -n "$instance_id" ] && ok "Target EC2 instance output found: $instance_id" || warn "instance_id output not available yet"
-  [ -n "$migration_bucket" ] && ok "Migration S3 bucket output found: $migration_bucket" || warn "migration_bucket_name output not available yet"
+  if [ -n "$wordpress_url" ]; then
+    ok "Target WordPress URL output found: $wordpress_url"
+  else
+    warn "wordpress_url output not available yet"
+  fi
+
+  if [ -n "$instance_id" ]; then
+    ok "Target EC2 instance output found: $instance_id"
+  else
+    warn "instance_id output not available yet"
+  fi
+
+  if [ -n "$migration_bucket" ]; then
+    ok "Migration S3 bucket output found: $migration_bucket"
+  else
+    warn "migration_bucket_name output not available yet"
+  fi
 }
 
 check_source_wordpress() {
@@ -171,9 +185,23 @@ check_source_wordpress() {
   [ -d "$SOURCE_PATH" ] || fail "Source path does not exist: $SOURCE_PATH"
   [ -f "$SOURCE_PATH/wp-config.php" ] || fail "Source path does not contain wp-config.php"
   [ -d "$SOURCE_PATH/wp-content" ] || fail "Source path does not contain wp-content"
-  [ -d "$SOURCE_PATH/wp-content/uploads" ] && ok "wp-content/uploads exists" || warn "wp-content/uploads was not found"
-  [ -d "$SOURCE_PATH/wp-content/themes" ] && ok "wp-content/themes exists" || warn "wp-content/themes was not found"
-  [ -d "$SOURCE_PATH/wp-content/plugins" ] && ok "wp-content/plugins exists" || warn "wp-content/plugins was not found"
+  if [ -d "$SOURCE_PATH/wp-content/uploads" ]; then
+    ok "wp-content/uploads exists"
+  else
+    warn "wp-content/uploads was not found"
+  fi
+
+  if [ -d "$SOURCE_PATH/wp-content/themes" ]; then
+    ok "wp-content/themes exists"
+  else
+    warn "wp-content/themes was not found"
+  fi
+
+  if [ -d "$SOURCE_PATH/wp-content/plugins" ]; then
+    ok "wp-content/plugins exists"
+  else
+    warn "wp-content/plugins was not found"
+  fi
 
   if command -v wp >/dev/null 2>&1; then
     if wp --path="$SOURCE_PATH" core is-installed >/dev/null 2>&1; then

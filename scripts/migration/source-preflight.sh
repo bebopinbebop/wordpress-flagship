@@ -96,7 +96,11 @@ run_source_preflight() {
   migration_ok "Source EC2 host resolved: $SOURCE_HOST"
 
   source_url="$(migration_terraform_output "$SOURCE_ENV" "wordpress_url")"
-  [ -n "$source_url" ] && migration_ok "Source URL output found: $source_url" || migration_warn "Source URL output was not found"
+  if [ -n "$source_url" ]; then
+    migration_ok "Source URL output found: $source_url"
+  else
+    migration_warn "Source URL output was not found"
+  fi
 
   migration_ssh_base_args "$SOURCE_SSH_KEY"
   migration_info "Checking SSH reachability"
@@ -111,9 +115,23 @@ run_source_preflight() {
   ssh_source "test -f '$WORDPRESS_PATH/wp-config.php'" || migration_fail "SOURCE_PREFLIGHT" "wp-config.php missing at $WORDPRESS_PATH"
   migration_ok "WordPress file markers exist"
 
-  ssh_source "test -d '$WORDPRESS_PATH/wp-content/plugins'" && migration_ok "plugins directory exists" || migration_warn "plugins directory not found"
-  ssh_source "test -d '$WORDPRESS_PATH/wp-content/themes'" && migration_ok "themes directory exists" || migration_warn "themes directory not found"
-  ssh_source "test -d '$WORDPRESS_PATH/wp-content/uploads'" && migration_ok "uploads directory exists" || migration_warn "uploads directory not found"
+  if ssh_source "test -d '$WORDPRESS_PATH/wp-content/plugins'"; then
+    migration_ok "plugins directory exists"
+  else
+    migration_warn "plugins directory not found"
+  fi
+
+  if ssh_source "test -d '$WORDPRESS_PATH/wp-content/themes'"; then
+    migration_ok "themes directory exists"
+  else
+    migration_warn "themes directory not found"
+  fi
+
+  if ssh_source "test -d '$WORDPRESS_PATH/wp-content/uploads'"; then
+    migration_ok "uploads directory exists"
+  else
+    migration_warn "uploads directory not found"
+  fi
 
   migration_info "Checking source WordPress and database with WP-CLI"
   ssh_source "command -v wp >/dev/null" || migration_fail "SOURCE_PREFLIGHT" "WP-CLI is not installed on source EC2"
@@ -134,17 +152,32 @@ run_source_preflight() {
   migration_ok "WP-CLI database check passed"
 
   wp_version="$(ssh_source "sudo -n -u www-data wp --path='$WORDPRESS_PATH' core version" 2>/dev/null || true)"
-  [ -n "$wp_version" ] && migration_ok "WordPress version: $wp_version" || migration_warn "Could not read WordPress version"
+  if [ -n "$wp_version" ]; then
+    migration_ok "WordPress version: $wp_version"
+  else
+    migration_warn "Could not read WordPress version"
+  fi
 
   db_name="$(ssh_source "sudo -n -u www-data wp --path='$WORDPRESS_PATH' config get DB_NAME" 2>/dev/null || true)"
   db_host="$(ssh_source "sudo -n -u www-data wp --path='$WORDPRESS_PATH' config get DB_HOST" 2>/dev/null || true)"
-  [ -n "$db_name" ] && migration_ok "Source database name detected" || migration_warn "Could not read source DB_NAME"
-  [ -n "$db_host" ] && migration_ok "Source database host detected: $db_host" || migration_warn "Could not read source DB_HOST"
+  if [ -n "$db_name" ]; then
+    migration_ok "Source database name detected"
+  else
+    migration_warn "Could not read source DB_NAME"
+  fi
+
+  if [ -n "$db_host" ]; then
+    migration_ok "Source database host detected: $db_host"
+  else
+    migration_warn "Could not read source DB_HOST"
+  fi
 
   migration_info "Checking source disk space"
   disk_report="$(ssh_source "df -Pk /tmp '$WORDPRESS_PATH' | awk 'NR > 1 { print \$6 \":\" \$4 \"KB available\" }'" 2>/dev/null || true)"
   if [ -n "$disk_report" ]; then
-    echo "$disk_report" | sed 's/^/     /'
+    while IFS= read -r disk_line; do
+      echo "     $disk_line"
+    done <<< "$disk_report"
     migration_ok "Disk space report collected"
   else
     migration_warn "Could not collect disk space report"

@@ -14,7 +14,7 @@ RESET="$(printf '\033[0m')"
 require_apt() {
   if ! command -v apt-get >/dev/null 2>&1; then
     echo "${RED}[missing]${RESET} This helper currently supports Ubuntu/Debian systems with apt-get."
-    echo "Install these tools manually: terraform, aws, zip, curl, openssl, unzip."
+    echo "Install these tools manually: terraform, aws, curl, ssh, zip, unzip, tar, gzip, sha256sum, openssl, shellcheck, jq, and a MySQL/MariaDB client."
     exit 1
   fi
 }
@@ -25,10 +25,26 @@ command_exists() {
 
 print_installed_version() {
   local command_name="$1"
-  local version_command="$2"
+  local version_output
 
   if command_exists "$command_name"; then
-    echo "${GREEN}[ok]${RESET} $command_name installed: $($version_command 2>/dev/null | head -n 1)"
+    case "$command_name" in
+      terraform) version_output="$(terraform version 2>&1 | head -n 1)" ;;
+      aws) version_output="$(aws --version 2>&1 | head -n 1)" ;;
+      zip) version_output="$(zip --version 2>&1 | head -n 1)" ;;
+      unzip) version_output="$(unzip -v 2>&1 | head -n 1)" ;;
+      curl) version_output="$(curl --version 2>&1 | head -n 1)" ;;
+      openssl) version_output="$(openssl version 2>&1 | head -n 1)" ;;
+      ssh) version_output="$(ssh -V 2>&1 | head -n 1)" ;;
+      tar) version_output="$(tar --version 2>&1 | head -n 1)" ;;
+      gzip) version_output="$(gzip --version 2>&1 | head -n 1)" ;;
+      sha256sum) version_output="$(sha256sum --version 2>&1 | head -n 1)" ;;
+      jq) version_output="$(jq --version 2>&1 | head -n 1)" ;;
+      shellcheck) version_output="$(shellcheck --version 2>&1 | head -n 1)" ;;
+      mysql) version_output="$(mysql --version 2>&1 | head -n 1)" ;;
+      *) version_output="installed" ;;
+    esac
+    echo "${GREEN}[ok]${RESET} $command_name installed: $version_output"
   else
     echo "${RED}[missing]${RESET} $command_name is still missing"
     return 1
@@ -45,7 +61,13 @@ install_base_packages() {
     curl \
     gnupg \
     lsb-release \
+    default-mysql-client \
+    gzip \
+    jq \
+    openssh-client \
     openssl \
+    shellcheck \
+    tar \
     unzip \
     wget \
     zip
@@ -126,11 +148,19 @@ install_aws_cli
 
 echo
 echo "Verifying installed tools..."
-print_installed_version terraform "terraform version"
-print_installed_version aws "aws --version"
-print_installed_version zip "zip --version"
-print_installed_version curl "curl --version"
-print_installed_version openssl "openssl version"
+print_installed_version terraform
+print_installed_version aws
+print_installed_version zip
+print_installed_version unzip
+print_installed_version curl
+print_installed_version openssl
+print_installed_version ssh
+print_installed_version tar
+print_installed_version gzip
+print_installed_version sha256sum
+print_installed_version jq
+print_installed_version shellcheck
+print_installed_version mysql
 echo
 echo "${GREEN}[ok]${RESET} Local prerequisites are installed."
 echo

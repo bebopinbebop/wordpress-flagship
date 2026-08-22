@@ -3,8 +3,11 @@
 # Shared helpers for the first WordPress migration workflow.
 # The initial supported source path is wp-lite -> wp-mig.
 
+# shellcheck disable=SC2034
 MIGRATION_SOURCE_ARCHITECTURE_DEFAULT="wp-lite"
+# shellcheck disable=SC2034
 MIGRATION_TARGET_ARCHITECTURE_DEFAULT="wp-mig"
+# shellcheck disable=SC2034
 MIGRATION_WORDPRESS_PATH_DEFAULT="/var/www/html"
 
 MIGRATION_GREEN="$(printf '\033[32m')"

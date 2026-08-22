@@ -41,7 +41,7 @@ The end goal would be that for an individual to then login to the `\wp-admin` pa
 
 ## wp-rds (Relational Database Services)
 
-**`wp-rds`** is a production-oriented development environment that uses Terraform to deploy a custom AWS VPC, a WordPress EC2 instance, a private Amazon RDS MySQL database, and an S3 bucket for future backup workflows. This is meant for **Production Level Deployment**, so major costs are rendered on an AWS account.
+**`wp-rds`** is a production-shaped development environment that uses Terraform to deploy a custom AWS VPC, a WordPress EC2 instance, a private Amazon RDS MySQL database, and an S3 bucket for future backup workflows. It costs more than `wp-lite` because RDS runs as a separate managed database.
 
 It separates the web and database tiers while securing the internal networking, managed database provisioning, and infrastructure automation. The environment provides a live WordPress site with data stored in RDS, making it ideal for migration testing, client hosting demonstrations, and preparing for future production enhancements. See further detail [here](docs/wp-rds-guide.md).
 
@@ -50,7 +50,7 @@ It separates the web and database tiers while securing the internal networking, 
 - RDS MySQL database in private subnets.
 - S3 bucket for future backups.
 - Admin-only `/demo/rds-lab.php` page that writes demo rows to RDS and uploads files to S3.
-- [ ] TODO: No NAT Gateway, Load Balancer, or CloudFront yet.
+- No NAT Gateway, Load Balancer, CloudFront, or HTTPS automation yet.
 
 ## wp-mig (Migration)
 
@@ -61,31 +61,55 @@ It separates the web and database tiers while securing the internal networking, 
 - Amazon S3 for backups and migration files
 - Custom AWS VPC with public and private subnets
 - Secure Security Group configuration
-- WP-CLI migration automation
-- Database import workflow
-- `wp-content` import (themes, plugins, uploads)
-- Domain search-and-replace automation
+- WP-CLI source preflight
+- Initial database export workflow
 - Temporary staging/testing URL
-- DNS cutover planning
-- Rollback procedures
+- Planned `wp-content` export, S3 transfer, restore, URL replacement, validation, and rollback
+- Future DNS cutover planning
 - Future HTTPS support (ACM + Load Balancer)
-- Backup, monitoring, and production-readiness validation
+- Future backup, monitoring, and production-readiness validation
 
 ## Requirements and Troubleshooting
 
-There are requirements to make this project work, as described below:
+The primary supported local workflow is Linux/Bash or WSL2 Ubuntu/Bash. PowerShell can be useful for manual troubleshooting, but the project scripts are designed around Bash.
 
- - Shell terminal - this project was built using WSL on Windows 11. This means the project is intended for Debian Linux environments or Zsh. PowerShell is theoretically possible but was not pursued due to the ubiquity of Linux terminals.
- - AWS CLI - you need to install the AWS CLI locally on the machine you wish to push this from. Here is a [link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#:~:text=The%20install%20script%20downloads%2C%20verifies%2C%20and%20installs%20the%20AWS%20CLI%20for%20Linux%20in%20one%20step.%20It%20works%20for%20both%20Linux%20x86%20(64%2Dbit)%20and%20Linux%20ARM%2C%20and%20installs%20for%20the%20current%20user%20by%20default.) to do so.
- - AWS SSO logged in - this project assumes you have an AWS IAM identity logged in as your default account in the AWS CLI. This requires you to have a profile set up in your AWS account's IAM Identity Center that **has the right permissions** to create and destroy resources. Here is a [link](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html#cli-configure-sso-configure) to do so.
+Required local tools:
 
- `openssl` - used to generate random passwords for the MariaDB or WordPress admin login
- `curl` - used to check on the WordPress EC2 Instance to poll whether the site is live
- `zip` - used by Terraform to push any local website folder to the EC2 for unpacking if you wish to push your own files rather than using the default splash page
- `terraform` - used to architect a backend for AWS to then construct the necessary resources in the cloud
+- `bash`: runs the project scripts.
+- `terraform`: plans, validates, creates, and destroys AWS infrastructure.
+- `aws`: authenticates with AWS and supports resource discovery.
+- `curl`: waits for WordPress and checks HTTP readiness.
+- `ssh`: reaches EC2 instances for diagnostics and migration export.
+- `zip` and `unzip`: package and unpack the static demo site.
+- `tar` and `gzip`: package migration artifacts.
+- `sha256sum`: verifies migration artifact checksums.
+- `openssl`: generates local demo passwords.
 
+Migration testing also uses:
 
+- `mysql` or `mariadb` client tools.
 
+Optional development/static-analysis tools:
+
+- `shellcheck`: lint Bash scripts locally; CI runs ShellCheck.
+- `jq`: useful for inspecting generated migration manifests.
+- `shfmt`: useful for formatting Bash, but not required by CI.
+- `tflint`: useful for deeper Terraform linting, but not required by CI yet.
+
+On a fresh Ubuntu/Debian or WSL2 machine, install the local command-line tools with:
+
+```bash
+./scripts/install-prereqs.sh
+```
+
+Then configure AWS with a CLI profile or AWS SSO:
+
+```bash
+aws configure sso
+aws sso login --profile your-profile-name
+```
+
+Do not paste AWS access keys into project scripts.
 
 ## Bash Path Portability
 
@@ -131,7 +155,7 @@ The deployed site uses WordPress as the main editable website:
 
 This repository uses GitHub Actions to validate Terraform code on pushes to `main` and on pull requests.
 
-The Terraform Checks workflow runs `terraform fmt -check -recursive`, verifies Bash script syntax, checks that local Terraform state and `.tfvars` files are not committed, and runs `terraform init -backend=false` plus `terraform validate` for the implemented Terraform environments.
+The Terraform Checks workflow runs `terraform fmt -check -recursive`, verifies Bash script syntax recursively under `scripts/`, runs ShellCheck, checks that local Terraform state and `.tfvars` files are not committed, and runs `terraform init -backend=false` plus `terraform validate` for the implemented Terraform environments.
 
 The workflow validates the implemented Terraform environments: `wp-lite`, `wp-rds`, and `wp-mig`.
 
@@ -254,7 +278,35 @@ Read-only resource discovery is available with:
 ./scripts/resources.sh list --architecture wp-lite --deployment wp-lite-test
 ```
 
-## TODO
+## Demo Security Caveats
 
-- [ ] finalize wp-rds
-- [ ] add wp-mig export, restore, URL replacement, and validation automation
+This repository is demo-first. It is intentionally easy to create and destroy resources while learning.
+
+- `allowed_ssh_cidr = 0.0.0.0/0` is convenient for demos, but SSH should be restricted to a trusted IP range before real use.
+- `skip_final_snapshot = true` is used for disposable RDS demos to avoid leftover snapshot storage costs.
+- S3 `force_destroy` is used for disposable demo buckets so uploaded demo files do not block cleanup.
+- HTTPS, stronger backup policies, monitoring, private EC2 placement, and production hardening are future work.
+
+## Current Status And TODO
+
+Completed:
+
+- [x] `wp-lite` single-EC2 WordPress demo.
+- [x] `wp-rds` EC2 + private RDS MySQL + S3 demo.
+- [x] `wp-mig` migration target infrastructure.
+- [x] Structured AWS tagging across all three architectures.
+- [x] Bash path portability with project-relative generated artifacts.
+- [x] Read-only AWS tag discovery.
+- [x] `wp-lite` source migration preflight.
+- [x] Initial `wp-lite` database export with manifest and checksums.
+
+Next migration work:
+
+- [ ] Export `wp-content` as `wp-content.tar.gz`.
+- [ ] Upload migration artifacts to the private `wp-mig` S3 bucket.
+- [ ] Add target preflight checks.
+- [ ] Back up the target before restore.
+- [ ] Restore database and `wp-content` into `wp-mig`.
+- [ ] Run WP-CLI search-replace for source and target URLs.
+- [ ] Validate migrated WordPress content.
+- [ ] Add rollback workflow.

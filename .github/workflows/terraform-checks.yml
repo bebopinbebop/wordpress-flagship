@@ -23,9 +23,19 @@ jobs:
       - name: Terraform format check
         run: terraform fmt -check -recursive
 
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
       - name: Bash syntax check
         run: |
-          bash -n scripts/*.sh
+          find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+
+      - name: ShellCheck
+        run: |
+          # SC1090/SC1091: scripts resolve shared libraries from the Git project root at runtime.
+          # SC2016: AWS CLI JMESPath queries intentionally use single quotes and backticks.
+          # SC2029: migration scripts intentionally expand local variables into SSH commands.
+          find scripts -type f -name '*.sh' -print0 | xargs -0 shellcheck -x -e SC1090 -e SC1091 -e SC2016 -e SC2029
 
       - name: Verify no committed local Terraform variables or state
         run: |

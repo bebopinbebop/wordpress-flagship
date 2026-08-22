@@ -7,8 +7,12 @@ This guide explains the intended deployment flow for the MVP AWS WordPress platf
 - AWS account.
 - AWS CLI configured with a named profile.
 - Terraform installed locally.
+- Bash-compatible shell on Linux or WSL2 Ubuntu.
+- `curl`, `ssh`, `zip`, `unzip`, `tar`, `gzip`, `sha256sum`, and `openssl`.
 - An EC2 key pair created in the target AWS region.
 - A safe way to provide database and WordPress admin credentials, such as local environment variables, ignored `.tfvars` files, or a secrets manager.
+
+Migration testing also uses a MySQL or MariaDB client. Optional development tools include ShellCheck for Bash linting, `jq` for reading generated JSON manifests, `shfmt` for Bash formatting, and `tflint` for deeper Terraform linting.
 
 On a fresh Ubuntu/Debian or WSL machine, install the local command-line tools with:
 
@@ -36,7 +40,6 @@ Do not commit:
 - `terraform/environments/wp-lite` is for the lowest-cost demos with WordPress and MariaDB on one EC2 instance.
 - `terraform/environments/wp-rds` is for testing WordPress on EC2 with RDS MySQL in private subnets and an S3 bucket reserved for backups.
 - `terraform/environments/wp-mig` is for provisioning a clean AWS migration target based on the `wp-rds` architecture.
-- `terraform/environments/wp-mig` is a placeholder for future migration and rehosting workflows.
 - Shared infrastructure logic lives in `terraform/modules`.
 
 ## MVP Deployment Flow
@@ -126,4 +129,10 @@ For dev environments, destroy resources when they are no longer needed.
 ./scripts/destroy-stack.sh --env wp-mig --profile your-profile-name
 ```
 
-Use `--env all` to clean up both active demo environments from local Terraform state. Be careful with production resources because destroying infrastructure can remove databases, storage, and running servers.
+Use `--env all` to clean up discovered demo deployments from local Terraform state. Be careful with production resources because destroying infrastructure can remove databases, storage, and running servers.
+
+## Demo Safety Notes
+
+- The default SSH CIDR can be left open for quick demos, but real use should restrict SSH to a trusted IP range.
+- `wp-rds` and `wp-mig` use disposable-demo cleanup defaults, including skipped final RDS snapshots and force-destroy S3 buckets.
+- HTTPS, stronger backup policy, monitoring, private EC2 placement, and production hardening are intentionally future work.
