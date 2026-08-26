@@ -1,23 +1,23 @@
 # wordpress-flagship
+[![Terraform Checks](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml/badge.svg)](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml)
+
+![WP-Flagship intro gif](images/gifs/gif1_intro.gif)
+
 ## ☁️ Overview
+<img src = "images/aws_terra_wp.png" width = "400">
+
 ### Hosting WordPress on AWS Resources automatically with Terraform as IaC.
  This project aims to build a WordPress (WP) project from your terminal onto your AWS account using Terraform-defined resources that coalesce into a functional website.
 
-[![Terraform Checks](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml/badge.svg)](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml)
-
-
-
-
-<img src = "images/aws_terra_wp.png" width = "500">
 
 Below is a detailed breakdown of the project with supporting documents linked throughout to other sources within this project:
 
-- 🚀 [QuickStart](#-quickstart)
-- ✨ [Features](#-features)
-- 🔄 [Continuous Integration](#-continuous-integration)
-- 🏗️ [Project Structure](#️-project-structure)
-- 🛠️ [Tech Stack & Notes](#️-tech-stack--notes)
-- [🏷️ Tagging](#️-tagging)
+-  [QuickStart](#-quickstart)
+-  [Features](#-features)
+-  [Continuous Integration](#-continuous-integration)
+-  [Project Structure](#️-project-structure)
+-  [Tech Stack & Notes](#️-tech-stack--notes)
+-  [Tagging Architecture](#️-tagging)
 
 
 ## 🚀 QuickStart

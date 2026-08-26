@@ -34,7 +34,6 @@ For ease, a lot of the script is geared towards building a `wp-lite` deployment,
 Below is a simplified line-by-line input request to configure the script into building a `wp-lite` project as needed, with comments to explain the goal of what is trying to be improved:
 
 ```bash
-
 Environment: wp-lite, wp-rds, or wp-mig [wp-lite]: # which deployment you want (wp-lite, wp-rds, wp-mig)
 
 Website display name [Cloud WordPress Demo]: # the name of the website, can be anything
@@ -50,7 +49,6 @@ Existing EC2 key pair name [replace-with-your-key-pair]: # type in an existing E
 SSH allowed CIDR [0.0.0.0/0]: # if you know what IP schematic (public or private) you want to allow to your box, type it in. if not leave as is and then configure security settings later once up and running
 
 EC2 instance type [t3.micro]: # default, simple EC2. Depending on goals, this may change to improve quality
-
 ```
 
 Once set, the script will start Terraform, scaffolding resouces to then push onto AWS to build. Before doing so, the script will ask if these resources are okay. Type `yes` to conintue:
