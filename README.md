@@ -1,20 +1,49 @@
 # wordpress-flagship
+## ☁️ Overview
+### Hosting WordPress on AWS Resources automatically with Terraform as IaC.
+ This project aims to build a WordPress (WP) project from your terminal onto your AWS account using Terraform-defined resources that coalesce into a functional website.
 
 [![Terraform Checks](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml/badge.svg)](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml)
 
+
+
+
 <img src = "images/aws_terra_wp.png" width = "500">
 
-## Hosting WordPress on AWS Resources automatically with Terraform as IaC.
+Below is a detailed breakdown of the project with supporting documents linked throughout to other sources within this project:
 
-This project aims to build a WordPress (WP) project from your terminal onto your AWS account using Terraform-defined resources that coalesce into a functional website.
+- 🚀 [QuickStart](#-quickstart)
+- ✨ [Features](#-features)
+- 🔄 [Continuous Integration](#-continuous-integration)
+- 🏗️ [Project Structure](#️-project-structure)
+- [🏷️ Tagging](#️-tagging)
 
-Terraform was chosen over AWS CloudFormation because Terraform is popular, vendor-neutral, and adaptable to other Cloud Service Providers (CSPs), meaning other companies feel safer having the option to spin up their infrastructure on another platform if their current CSP is lacking.
 
-AWS was chosen due to the huge market share that affords dependability and reliability for projects built on it. The economy-of-scale that AWS provides also functions as a good support network for when things go wrong.
+## 🚀 QuickStart
+First, clone the repo into your desired path using:
+```
+https://github.com/bebopinbebop/wordpress-flagship.git
+```
 
-WordPress was chosen due to how it affords companies that may not have a technical background to get a professional image out to their clients, and the huge market share that WordPress has as a Content Management System (CMS).
+Then you must install any prerequisites that may be missing by running this in the project root:
+```
+chmod 700 scripts/install-prereqs.sh
+./scripts/install-prereqs.sh
+```
+This will install some fundemental packages like `aws`, `terraform`, and `openssl`.
 
-The project accomplishes WordPress on AWS resources by one of three ways, described below:
+⚠️ You must have an `aws` account locally configured into your terminal via SSO or CLI login (old school) so the script can create resources on your behalf. More information found [here](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html).
+
+Once all is cleared and good to go, from the project root, you can run:
+```
+./scripts/start-demo.sh
+```
+![WP-Flagship intro gif](images/gifs/gif1_intro.gif)
+📌the project is going to perform another systems check to see if all needed packages are installed.
+
+## ✨ Features
+
+The project pushes WordPress on AWS resources by one of three ways, described below:
 
 1. [wp-lite](#wp-lite-light-version)
 2. [wp-rds](#wp-rds-relational-database-services)
@@ -22,16 +51,17 @@ The project accomplishes WordPress on AWS resources by one of three ways, descri
 
 ![Project Breakdown](images/project-breakdown.png)
 
-Each of the aforementioned sections in this project have their own dedicated documentation to act as a guide in how to operate them, with troubleshooting tips and explanations detailing the direction.
+Each of the aforementioned sections in this project have their own dedicated documentation to act as a guide in how to operate them, with troubleshooting tips and explanations detailing the demo.
 
 In the `Terraform` folder, there are three environments (`wp-lite`, `wp-rds`, `wp-mig`) that each contain their own resource definitions that will be built by `aws`. Some definations are built off from previous ones, such as `wp-rds` being an extended version of `wp-lite`.
 
-In essence, each project section creates an `ec2` instance that is then preloaded with `wordpress`, and then custom Security Groups, IAM permissions and attached resources build the necessary backend to support a fully functional webpage. Each section varies in how much resources are attached to it for a diverse capability set, making each deployment uniquely equipped for a specific mission.
+In essence, each project section creates an `ec2` instance that is then preloaded with `wordpress`, and then custom Security Groups, IAM permissions and attached resources build the necessary backend to support a fully functional webpage.
+
+Each section varies in how much resources are attached to it for a diverse capability set, making each deployment uniquely equipped for a specific mission.
 
 The end goal would be that for an individual to then login to the `\wp-admin` page and edit their WordPress webpage as they prefer.
 
-## wp-lite (Light Version)
-
+## 🪶 wp-lite (Light Version)
 **`wp-lite`** is a cost-effective environment that uses Terraform to deploy a complete WordPress stack (Apache, PHP, MariaDB, and WordPress) on a single EC2 instance within a custom AWS VPC. It's intended for portfolio demonstrations, testing, and rapid deployment while keeping AWS costs to a minimum. See further detail [here](docs/wp-lite-guide.md).
 
 - Custom VPC with public and private subnets.
@@ -39,7 +69,7 @@ The end goal would be that for an individual to then login to the `\wp-admin` pa
 - MariaDB installed on the same instance to support WP functionality like blog postings, plugins, and config files.
 - No RDS, NAT Gateway, Load Balancer, or CloudFront.
 
-## wp-rds (Relational Database Services)
+## 🗄️ wp-rds (Relational Database Services)
 
 **`wp-rds`** is a production-shaped development environment that uses Terraform to deploy a custom AWS VPC, a WordPress EC2 instance, a private Amazon RDS MySQL database, and an S3 bucket for future backup workflows. It costs more than `wp-lite` because RDS runs as a separate managed database.
 
@@ -52,7 +82,7 @@ It separates the web and database tiers while securing the internal networking, 
 - Admin-only `/demo/rds-lab.php` page that writes demo rows to RDS and uploads files to S3.
 - No NAT Gateway, Load Balancer, CloudFront, or HTTPS automation yet.
 
-## wp-mig (Migration)
+## 🚚 wp-mig (Migration)
 
 **`wp-mig`** is a migration-focused environment designed to demonstrate the process of rehosting existing WordPress websites on AWS using Terraform. It provisions a clean AWS migration target based on the `wp-rds` architecture, then uses migration scripts and documentation to guide export, transfer, restore, reconfiguration, validation, rollback, and cleanup. Intended for client migrations, `wp-mig` showcases Infrastructure as Code (IaC), migration automation, and best practices for moving WordPress sites with minimal downtime. See further detail [here](docs/wp-mig-guide.md).
 
@@ -69,53 +99,7 @@ It separates the web and database tiers while securing the internal networking, 
 - Future HTTPS support (ACM + Load Balancer)
 - Future backup, monitoring, and production-readiness validation
 
-## Requirements and Troubleshooting
 
-The primary supported local workflow is Linux/Bash or WSL2 Ubuntu/Bash. PowerShell can be useful for manual troubleshooting, but the project scripts are designed around Bash.
-
-Required local tools:
-
-- `bash`: runs the project scripts.
-- `terraform`: plans, validates, creates, and destroys AWS infrastructure.
-- `aws`: authenticates with AWS and supports resource discovery.
-- `curl`: waits for WordPress and checks HTTP readiness.
-- `ssh`: reaches EC2 instances for diagnostics and migration export.
-- `zip` and `unzip`: package and unpack the static demo site.
-- `tar` and `gzip`: package migration artifacts.
-- `sha256sum`: verifies migration artifact checksums.
-- `openssl`: generates local demo passwords.
-
-Migration testing also uses:
-
-- `mysql` or `mariadb` client tools.
-
-Optional development/static-analysis tools:
-
-- `shellcheck`: lint Bash scripts locally; CI runs ShellCheck.
-- `jq`: useful for inspecting generated migration manifests.
-- `shfmt`: useful for formatting Bash, but not required by CI.
-- `tflint`: useful for deeper Terraform linting, but not required by CI yet.
-
-On a fresh Ubuntu/Debian or WSL2 machine, install the local command-line tools with:
-
-```bash
-./scripts/install-prereqs.sh
-```
-
-Then configure AWS with a CLI profile or AWS SSO:
-
-```bash
-aws configure sso
-aws sso login --profile your-profile-name
-```
-
-Do not paste AWS access keys into project scripts.
-
-## Bash Path Portability
-
-The guided scripts are Bash-first and are intended for Linux, WSL2, and Bash-compatible shells. They resolve the project root dynamically from Git when possible, so the project does not depend on a specific checkout folder such as `/mnt/c/Users/<username>/...`.
-
-Generated demo artifacts are written under the ignored `.generated/` folder at the project root. When the launcher writes local `terraform.tfvars`, archive paths are stored relative to the Terraform environment folder instead of using machine-specific absolute paths.
 
 ## Deliverables
 
@@ -151,7 +135,7 @@ The deployed site uses WordPress as the main editable website:
 - PHP
 - MariaDB
 
-## Continuous Integration
+## 🔄 Continuous Integration
 
 This repository uses GitHub Actions to validate Terraform code on pushes to `main` and on pull requests.
 
@@ -161,7 +145,7 @@ The workflow validates the implemented Terraform environments: `wp-lite`, `wp-rd
 
 CI validates infrastructure code only. It does not run `terraform apply` and does not deploy AWS resources.
 
-## Project Structure
+## 🏗️ Project Structure
 
 ```text
 .
@@ -202,31 +186,6 @@ CI validates infrastructure code only. It does not run `terraform apply` and doe
         └── vpc/
 ```
 
-## Phases
-
-### Phase 1: Development MVPs
-
-- Deploy `wp-lite` for low-cost single-instance demos.
-- Reserve `wp-rds` for a more realistic EC2 + RDS architecture.
-- Deploy `wp-mig` as a clean AWS target for migration and rehosting workflows.
-- Seed demo WordPress content with WP-CLI.
-- Document deployment, security, and cost controls.
-
-### Phase 2: Production Hardening
-
-- Add HTTPS with an Application Load Balancer and ACM certificate.
-- Move EC2 instances into private subnets.
-- Add NAT gateway or private package installation strategy.
-- Add automated RDS backups and snapshot policies.
-- Add CloudWatch logs, alarms, and dashboards.
-
-### Phase 3: Scalability
-
-- Add Auto Scaling Group support.
-- Store WordPress uploads in S3.
-- Add CloudFront CDN.
-- Add ElastiCache for object/page caching.
-- Split reusable modules into versioned releases.
 
 ## Deliverables
 
@@ -253,7 +212,9 @@ For the current MVP, keep these values local:
 
 Future production work should move secrets into AWS Secrets Manager or AWS Systems Manager Parameter Store.
 
-## Resource Identity
+## 🏷️ Tagging
+
+Since AWS supports key-pair tags, this project identifies artifacts made with ease. This is done so that anyone can find anything built within their AWS account by looking up tags.
 
 AWS resources are being organized around a standard tag identity model:
 
@@ -270,7 +231,10 @@ Deployment   = demo-001
 ManagedBy    = terraform
 ```
 
-This model is intended to improve resource discovery, cleanup verification, troubleshooting, and future cost reporting. See [docs/tagging-architecture.md](docs/tagging-architecture.md).
+This model is intended to improve resource discovery, cleanup verification, troubleshooting, and future cost reporting. A good example would be that the `scripts/destroy-stack.sh` uses these `tags` to help discover what needs to be destroyed.
+
+You can see all of the resources that the project makes by using `Tag Editor`:
+<img src = "images/tag-editor.png" width = "700">
 
 Read-only resource discovery is available with:
 
@@ -278,35 +242,15 @@ Read-only resource discovery is available with:
 ./scripts/resources.sh list --architecture wp-lite --deployment wp-lite-test
 ```
 
-## Demo Security Caveats
+More detail about this tagging mechanism can be found [here](docs/tagging-architecture.md)
 
-This repository is demo-first. It is intentionally easy to create and destroy resources while learning.
 
-- `allowed_ssh_cidr = 0.0.0.0/0` is convenient for demos, but SSH should be restricted to a trusted IP range before real use.
-- `skip_final_snapshot = true` is used for disposable RDS demos to avoid leftover snapshot storage costs.
-- S3 `force_destroy` is used for disposable demo buckets so uploaded demo files do not block cleanup.
-- HTTPS, stronger backup policies, monitoring, private EC2 placement, and production hardening are future work.
+## Decision Reasoning
 
-## Current Status And TODO
+Notes as to why certain constraints where chosen:
 
-Completed:
+ - Terraform was chosen over AWS CloudFormation because Terraform is popular, vendor-neutral, and adaptable to other Cloud Service Providers (CSPs), meaning other companies feel safer having the option to spin up their infrastructure on another platform if their current CSP is lacking.
 
-- [x] `wp-lite` single-EC2 WordPress demo.
-- [x] `wp-rds` EC2 + private RDS MySQL + S3 demo.
-- [x] `wp-mig` migration target infrastructure.
-- [x] Structured AWS tagging across all three architectures.
-- [x] Bash path portability with project-relative generated artifacts.
-- [x] Read-only AWS tag discovery.
-- [x] `wp-lite` source migration preflight.
-- [x] Initial `wp-lite` database export with manifest and checksums.
+ - AWS was chosen due to the huge market share that affords dependability and reliability for projects built on it. The economy-of-scale that AWS provides also functions as a good support network for when things go wrong.
 
-Next migration work:
-
-- [ ] Export `wp-content` as `wp-content.tar.gz`.
-- [ ] Upload migration artifacts to the private `wp-mig` S3 bucket.
-- [ ] Add target preflight checks.
-- [ ] Back up the target before restore.
-- [ ] Restore database and `wp-content` into `wp-mig`.
-- [ ] Run WP-CLI search-replace for source and target URLs.
-- [ ] Validate migrated WordPress content.
-- [ ] Add rollback workflow.
+ - WordPress was chosen due to how it affords companies that may not have a technical background to get a professional image out to their clients, and the huge market share that WordPress has as a Content Management System (CMS).
