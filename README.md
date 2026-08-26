@@ -16,6 +16,7 @@ Below is a detailed breakdown of the project with supporting documents linked th
 - ✨ [Features](#-features)
 - 🔄 [Continuous Integration](#-continuous-integration)
 - 🏗️ [Project Structure](#️-project-structure)
+- 🛠️ [Tech Stack & Notes](#️-tech-stack--notes)
 - [🏷️ Tagging](#️-tagging)
 
 
@@ -33,6 +34,8 @@ chmod 700 scripts/install-prereqs.sh
 This will install some fundemental packages like `aws`, `terraform`, and `openssl`.
 
 ⚠️ You must have an `aws` account locally configured into your terminal via SSO or CLI login (old school) so the script can create resources on your behalf. More information found [here](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html).
+
+⚠️ You must have an existing EC2 key-pair in your account that can be used by the script to help encrypt the box and facilitate `ssh` if needed.
 
 Once all is cleared and good to go, from the project root, you can run:
 ```
@@ -100,29 +103,8 @@ It separates the web and database tiers while securing the internal networking, 
 - Future backup, monitoring, and production-readiness validation
 
 
-
-## Deliverables
-
-
-
-The deployed site uses WordPress as the main editable website:
-
-```text
-/          WordPress site
-/wp-admin/ WordPress admin dashboard
-/demo/     Static Terraform/AWS infrastructure demo
-```
-
-## Architecture Goals
-
-- Build a repeatable WordPress infrastructure using Terraform.
-- Keep networking, security, compute, database, and storage concerns separated into modules.
-- Support separate `wp-lite`, `wp-rds`, and `wp-mig` environments.
-- Use placeholder variables for sensitive values and never commit real secrets.
-- Start with simple EC2-based MVPs, then evolve toward HTTPS, domains, backups, monitoring, and production automation.
-
-
-## Tech Stack
+## 🛠️ Tech Stack & Notes
+Below is a breakdown of what the project builds/uses, and also the reasoning for certain decisions for the project.
 
 - Terraform
 - AWS VPC
@@ -132,8 +114,16 @@ The deployed site uses WordPress as the main editable website:
 - Bash
 - WordPress
 - Apache
-- PHP
+- PHP (from WordPress)
 - MariaDB
+
+Notes as to why certain constraints where chosen:
+
+ - `Terraform` was chosen over AWS CloudFormation because Terraform is popular, vendor-neutral, and adaptable to other Cloud Service Providers (CSPs), meaning other companies feel safer having the option to spin up their infrastructure on another platform if their current CSP is lacking.
+
+ - `aws` was chosen due to the huge market share that affords dependability and reliability for projects built on it. The economy-of-scale that AWS provides also functions as a good support network for when things go wrong.
+
+ - `WordPress` was chosen due to how it affords companies that may not have a technical background to get a professional image out to their clients, and the huge market share that WordPress has as a Content Management System (CMS).
 
 ## 🔄 Continuous Integration
 
@@ -146,7 +136,7 @@ The workflow validates the implemented Terraform environments: `wp-lite`, `wp-rd
 CI validates infrastructure code only. It does not run `terraform apply` and does not deploy AWS resources.
 
 ## 🏗️ Project Structure
-
+Below is the expected layout from the project root. Some things are ignored to simplify the layout so that it makes sense:
 ```text
 .
 ├── docs/
@@ -186,18 +176,6 @@ CI validates infrastructure code only. It does not run `terraform apply` and doe
         └── vpc/
 ```
 
-
-## Deliverables
-
-- Beginner-friendly Terraform module structure.
-- Separate development and production environment folders.
-- Guided startup and cleanup scripts.
-- WordPress installation and seed scripts.
-- Deployment guide.
-- Security notes.
-- Cost estimate notes.
-- Static demo website files under `website/default-site`.
-- A clean GitHub-ready project layout.
 
 ## Secret Handling
 
@@ -245,12 +223,4 @@ Read-only resource discovery is available with:
 More detail about this tagging mechanism can be found [here](docs/tagging-architecture.md)
 
 
-## Decision Reasoning
 
-Notes as to why certain constraints where chosen:
-
- - Terraform was chosen over AWS CloudFormation because Terraform is popular, vendor-neutral, and adaptable to other Cloud Service Providers (CSPs), meaning other companies feel safer having the option to spin up their infrastructure on another platform if their current CSP is lacking.
-
- - AWS was chosen due to the huge market share that affords dependability and reliability for projects built on it. The economy-of-scale that AWS provides also functions as a good support network for when things go wrong.
-
- - WordPress was chosen due to how it affords companies that may not have a technical background to get a professional image out to their clients, and the huge market share that WordPress has as a Content Management System (CMS).

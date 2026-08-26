@@ -1,4 +1,4 @@
-# wp-lite Guide
+# 🪶 wp-lite Guide
 
 `wp-lite` is the low-cost demo environment.
 
@@ -13,18 +13,45 @@ It creates one EC2 instance and installs both WordPress and MariaDB on that same
 
 ## You can add your own domain in the backend so that it has a proper site domain
 
-## Deploy
+!!! todo: demonstrate how to add ACM to create a https domain from person's choosing
 
-Guided deployment:
+## Deploy a wp-lite env
 
+![long demo gif](../images/gifs//gif3_wp_lite_setup.gif)
+🟢NOTE: The CLI has default parameters set in `[default-value]` which automatically apply by just pressing `Enter`.
+
+### 1. Starting the script
+From the project root, type the following:
 ```bash
+chmod 700 scripts/start-demo.sh # that's if you never gave permissions
 ./scripts/start-demo.sh
 ```
+The script checks your shell env to ensure that the necessary packages are installed for the script to use. It shows this by displaying green `[ok]` for every required package used.
 
-Choose `wp-lite` when the launcher asks for the environment. Before Terraform runs, the script checks that required local tools are installed, the AWS profile is authenticated, the EC2 key pair exists in the selected region, and the static demo site folder is usable.
+### 2. Entering inputs for the script
+For ease, a lot of the script is geared towards building a `wp-lite` deployment, so the default values have been preloaded as a suggestion by just pressing `Enter`.
 
-This will start the first set of queries for the script to begin asking some variable initiliazing for the script to use:
-![init_script](../images/wp-lite/init_script.png)
+Below is a simplified line-by-line input request to configure the script into building a `wp-lite` project as needed, with comments to explain the goal of what is trying to be improved:
+
+```bash
+
+Environment: wp-lite, wp-rds, or wp-mig [wp-lite]: # which deployment you want (wp-lite, wp-rds, wp-mig)
+
+Website display name [Cloud WordPress Demo]: # the name of the website, can be anything
+
+Use a custom static demo folder instead of website/default-site? yes or no [no]: # this is in case you wanted to push your own website source code, 'no' is default
+
+AWS CLI profile name [default]: # the aws account moniker associated to your account that is saved in your aws-cli local install, usually the only one account is called 'default'
+
+AWS region [us-east-1]: # which region you want to build all the supporting resources for this project, i.e. EC2, Database etc
+
+Existing EC2 key pair name [replace-with-your-key-pair]: # type in an existing EC2 key-pair from your account
+
+SSH allowed CIDR [0.0.0.0/0]: # if you know what IP schematic (public or private) you want to allow to your box, type it in. if not leave as is and then configure security settings later once up and running
+
+EC2 instance type [t3.micro]: # default, simple EC2. Depending on goals, this may change to improve quality
+
+```
 
 Once set, the script will start Terraform, scaffolding resouces to then push onto AWS to build. Before doing so, the script will ask if these resources are okay. Type `yes` to conintue:
 ![create](../images/wp-lite/create_resources.png)
