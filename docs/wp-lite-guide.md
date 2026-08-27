@@ -20,7 +20,7 @@ It creates one EC2 instance and installs both WordPress and MariaDB on that same
 ![long demo gif](../images/gifs//gif3_wp_lite_setup.gif)
 🟢NOTE: The CLI has default parameters set in `[default-value]` which automatically apply by just pressing `Enter`.
 
-### 1. Starting the script
+## 1. Starting the script
 From the project root, type the following:
 ```bash
 chmod 700 scripts/start-demo.sh # that's if you never gave permissions
@@ -28,7 +28,7 @@ chmod 700 scripts/start-demo.sh # that's if you never gave permissions
 ```
 The script checks your shell env to ensure that the necessary packages are installed for the script to use. It shows this by displaying green `[ok]` for every required package used.
 
-### 2. Entering inputs for the script
+## 2. Entering inputs for the script
 For ease, a lot of the script is geared towards building a `wp-lite` deployment, so the default values have been preloaded as a suggestion by just pressing `Enter`.
 
 Below is a simplified line-by-line input request to configure the script into building a `wp-lite` project as needed, with comments to explain the goal of what is trying to be improved:
@@ -50,13 +50,15 @@ SSH allowed CIDR [0.0.0.0/0]: # if you know what IP schematic (public or private
 
 EC2 instance type [t3.micro]: # default, simple EC2. Depending on goals, this may change to improve quality
 ```
-
+## 3. Confirming AWS Resources from Terraform
 Once set, the script will start Terraform, scaffolding resouces to then push onto AWS to build. Before doing so, the script will ask if these resources are okay. Type `yes` to conintue:
 ![create](../images/wp-lite/create_resources.png)
 
+## 4. Cloud Built, Checking Endpoints
 Then the script will run a while, building AWS resources through the local aws sso account set up before. There will be a heartbeat check on whether the EC2 instance is ready to be visited online:
 ![outputs](../images/wp-lite/outputs.png)
 
+## 5. Display login info
 And then all the login information, to both the MariaDB and the Wordpress Admin page, with proper endpoint URLs are displayed for you to click through:
 ![outputs_final](../images/wp-lite/outputs-final.png)
 
@@ -106,5 +108,5 @@ ssh ubuntu@your-instance-public-dns "chmod +x /tmp/seed-wordpress.sh && sudo SIT
 Destroy this environment when the demo is finished.
 
 ```bash
-terraform destroy
+./scripts/destroy-stack.sh
 ```
