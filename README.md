@@ -64,6 +64,27 @@ Each section varies in how much resources are attached to it for a diverse capab
 
 The end goal would be that for an individual to then login to the `\wp-admin` page and edit their WordPress webpage as they prefer.
 
+## 🧭 Architecture at a Glance
+
+The repository is organized around reusable Terraform modules and separate environment roots. Each environment calls the same module patterns where possible, then changes the database, storage, and migration behavior based on the target demo path.
+
+```mermaid
+flowchart TD
+    User["User / Browser"] -->|HTTP :80| EC2["EC2 WordPress Web Server"]
+    Admin["WordPress Admin /wp-admin"] -->|CMS edits| EC2
+    EC2 -->|Apache + PHP| WP["WordPress Application"]
+    WP -->|wp-lite| LocalDB["Local MariaDB on EC2"]
+    WP -->|wp-rds / wp-mig| RDS["Private RDS MySQL"]
+    EC2 -->|wp-rds / wp-mig demo artifacts| S3["S3 Backup / Migration Bucket"]
+    Terraform["Terraform Environment Root"] --> VPC["Custom VPC, Subnets, Route Tables"]
+    Terraform --> SG["Security Groups"]
+    Terraform --> EC2
+    Terraform --> RDS
+    Terraform --> S3
+```
+
+From an Infrastructure as Code perspective, the project demonstrates environment separation, reusable modules, repeatable EC2 bootstrap automation, security group scoping, database tier choices, S3-backed demo storage, AWS resource tagging, and safe destroy workflows for short-lived portfolio deployments.
+
 ## 🪶 wp-lite (Light Version)
 **`wp-lite`** is a cost-effective environment that uses Terraform to deploy a complete WordPress stack (Apache, PHP, MariaDB, and WordPress) on a single EC2 instance within a custom AWS VPC. It's intended for portfolio demonstrations, testing, and rapid deployment while keeping AWS costs to a minimum. See further detail [here](docs/wp-lite-guide.md).
 
@@ -71,6 +92,15 @@ The end goal would be that for an individual to then login to the `\wp-admin` pa
 - One EC2 instance in a public subnet that installs WP via its **User Data** that's been altered.
 - MariaDB installed on the same instance to support WP functionality like blog postings, plugins, and config files.
 - No RDS, NAT Gateway, Load Balancer, or CloudFront.
+
+Technical focus:
+
+- Uses `terraform/environments/wp-lite` as a Terraform root module.
+- Reuses the shared `vpc`, `security`, and `ec2` modules.
+- Boots WordPress through EC2 User Data instead of manual server configuration.
+- Keeps database traffic local to the instance by using `localhost` MariaDB.
+- Tags resources with the standard `Project`, `Architecture`, `Deployment`, `ManagedBy`, and `Purpose` model for discovery and cleanup.
+- Provides a low-cost baseline before moving into the more production-shaped `wp-rds` architecture.
 
 ## 🗄️ wp-rds (Relational Database Services)
 
@@ -221,6 +251,5 @@ Read-only resource discovery is available with:
 ```
 
 More detail about this tagging mechanism can be found [here](docs/tagging-architecture.md)
-
 
 

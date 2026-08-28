@@ -4,12 +4,87 @@
 
 It creates one EC2 instance and installs both WordPress and MariaDB on that same instance. It does not create RDS, NAT Gateway, Load Balancer, or CloudFront.
 
+## Architecture Summary
+
+`wp-lite` is designed as the smallest useful WordPress-on-AWS proof of concept. It keeps the web server, PHP runtime, WordPress files, and MariaDB database on one EC2 instance so the deployment stays inexpensive, easy to understand, and easy to destroy after a demonstration.
+
+```mermaid
+flowchart LR
+    Browser["Browser"] -->|HTTP :80| SG["Security Group"]
+    SG --> EC2["Public EC2 Instance"]
+    EC2 --> Apache["Apache"]
+    Apache --> PHP["PHP Runtime"]
+    PHP --> WP["WordPress"]
+    WP --> MariaDB["Local MariaDB"]
+    EC2 --> Demo["/demo Static Site"]
+    Terraform["Terraform wp-lite Root"] --> VPC["Custom VPC"]
+    Terraform --> SG
+    Terraform --> EC2
+```
+
+This environment is intentionally not production-grade. Its value is that it proves the full deployment lifecycle: Terraform creates AWS infrastructure, EC2 User Data bootstraps the server, WordPress becomes available in the browser, and the destroy script can remove the stack afterward.
+
 ## Best Use Cases
 
 - Portfolio demos.
 - Short-lived screenshots.
 - Practicing Terraform workflows.
 - Testing WordPress bootstrap scripts.
+
+## Technical Implementation Notes
+
+The `wp-lite` Terraform root is located at `terraform/environments/wp-lite`. It calls shared modules for networking, security, and compute instead of defining every AWS resource directly in one file.
+
+Core technical behaviors:
+
+- `module.vpc` creates the custom VPC, subnets, internet gateway, and route table resources.
+- `module.security` creates the WordPress security group for HTTP and SSH access.
+- `module.ec2` creates the WordPress EC2 instance and passes bootstrap values into `user-data.sh.tftpl`.
+- `install_mode = "local-db"` tells the EC2 bootstrap process to install MariaDB on the same instance.
+- `db_host = "localhost"` keeps WordPress database traffic inside the EC2 instance instead of reaching out to RDS.
+- `site_archive_path` allows the launcher to package the static demo website and deploy it under `/demo/`.
+- `wp_admin_user`, `wp_admin_email`, and `wp_admin_password` are used by WP-CLI during first boot to create the WordPress admin login.
+
+During first boot, EC2 User Data performs the server configuration work that would otherwise be done manually over SSH:
+
+- Installs Apache, PHP extensions, MariaDB, WP-CLI, and helper packages.
+- Creates the local MariaDB database and WordPress database user.
+- Downloads WordPress from `wordpress.org`.
+- Writes `wp-config.php` with the generated local database settings.
+- Runs `wp core install` through WP-CLI.
+- Seeds basic pages and a primary navigation menu.
+- Copies the static infrastructure demo into `/var/www/html/demo`.
+- Restarts Apache after file permissions are set.
+
+## What This Demonstrates
+
+From a portfolio perspective, `wp-lite` demonstrates more than launching a virtual machine. It shows that the repository can automate a complete application stack with repeatable infrastructure and application bootstrap logic.
+
+Skills demonstrated:
+
+- Terraform root module organization.
+- AWS VPC and subnet design for a simple public web server.
+- Security group configuration for HTTP and SSH.
+- EC2 User Data automation.
+- Linux package installation and service management.
+- Apache/PHP/WordPress runtime setup.
+- MariaDB database provisioning.
+- WP-CLI based WordPress installation and content seeding.
+- Git-safe handling of local `.tfvars` values.
+- Cost-conscious teardown through the destroy helper.
+
+## Important Tradeoffs
+
+`wp-lite` is intentionally simple, so it accepts tradeoffs that would not be ideal for a production client site:
+
+- The database is on the same EC2 instance, so losing the instance can also lose the database unless backups are taken.
+- There is no load balancer, so traffic goes directly to the EC2 public endpoint.
+- There is no ACM certificate or HTTPS automation yet.
+- SSH may be opened broadly during testing unless the user provides a narrower CIDR range.
+- Scaling is vertical only; increasing capacity means changing the EC2 instance size.
+- Backups, monitoring, and managed database recovery are better handled by the later `wp-rds` path.
+
+These tradeoffs are acceptable for a disposable demo environment, but the project intentionally separates `wp-rds` and `wp-mig` so more realistic hosting and migration patterns can be demonstrated later.
 
 ## You can add your own domain in the backend so that it has a proper site domain
 
