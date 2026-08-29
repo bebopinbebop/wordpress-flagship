@@ -39,6 +39,75 @@ flowchart TD
 
 There is no NAT Gateway, Load Balancer, CloudFront, ACM certificate, or automated DNS cutover yet. Those are future production-hardening steps.
 
+## Migration Target Summary
+
+`wp-mig` should be understood as a clean landing zone for WordPress rehosting work. It is not just another demo website; it is the environment that proves a repeatable migration workflow can move an existing WordPress site into AWS-managed infrastructure without blindly copying old server settings.
+
+```mermaid
+flowchart TD
+    Source["Existing WordPress Source"] --> Preflight["Read-only Source Preflight"]
+    Preflight --> ExportDb["Export Database"]
+    Preflight --> PackageContent["Package wp-content"]
+    ExportDb --> Artifacts["Local .generated Migration Artifacts"]
+    PackageContent --> Artifacts
+    Artifacts --> S3["S3 Migration Artifact Bucket"]
+    S3 --> EC2["EC2 Migration Target"]
+    EC2 --> WP["Target WordPress"]
+    WP --> RDS["Private RDS MySQL"]
+    WP --> Validate["Validation Report"]
+    Validate --> Cutover["Future DNS Cutover"]
+    Validate --> Rollback["Rollback Material"]
+```
+
+The target infrastructure is intentionally similar to `wp-rds` because migrations usually need a realistic destination: a web server, a managed database, storage for transfer artifacts, and a repeatable teardown path.
+
+## Technical Implementation Notes
+
+The `wp-mig` Terraform root is located at `terraform/environments/wp-mig`. It reuses the `wp-rds` style architecture so migration demos can focus on migration mechanics instead of a completely different hosting model.
+
+Core technical behaviors:
+
+- `module.vpc` creates the custom VPC, public subnets, private subnets, routing, and internet gateway.
+- `module.security` creates the WordPress web security group and the database security group.
+- `module.rds` provisions the private Amazon RDS MySQL target database.
+- `module.migration_bucket` creates the S3 bucket intended for migration artifacts, backups, and rollback packages.
+- `module.ec2` provisions the WordPress migration target in a public subnet.
+- `install_mode = "rds"` configures WordPress to use the private RDS endpoint.
+- `site_archive_base64 = ""` keeps EC2 User Data smaller so migration content is moved by scripts rather than embedded into Terraform.
+- `enable_s3_access = true` gives the EC2 instance IAM access to the migration artifact bucket.
+
+The migration scripts are designed to keep sensitive material out of Git. Generated artifacts go under `.generated/migrations`, while real database exports, source content packages, checksums, and manifests remain local and ignored.
+
+## What This Demonstrates
+
+From a portfolio and freelance-client perspective, `wp-mig` demonstrates that the project is not limited to brand-new WordPress installs. It introduces the beginning of a rehosting workflow that can later support client migrations from shared hosting, unmanaged VPS servers, or another cloud provider into AWS.
+
+Skills demonstrated:
+
+- Migration-oriented infrastructure design.
+- Separation between source environment, target environment, and migration attempt.
+- WP-CLI based source validation.
+- Database export planning.
+- Artifact staging and checksum generation.
+- Avoiding unsafe migration of old `wp-config.php` credentials.
+- Preserving the target RDS credentials created by Terraform.
+- Planning for URL replacement and serialized WordPress data handling.
+- Rollback-first migration thinking.
+- Clean teardown of migration targets and leftover snapshots.
+
+## Important Tradeoffs
+
+`wp-mig` is currently a staged migration foundation, not a complete one-click production migration tool:
+
+- The target infrastructure can be deployed, but full restore automation is still future work.
+- The first supported source path is `wp-lite -> wp-mig`.
+- Real client migrations will need domain-specific checks for plugins, themes, media paths, forms, caching, email, DNS, and SSL.
+- Large sites may require different transfer methods than simple SSH/SCP or local artifact storage.
+- Search-and-replace must be handled with WP-CLI or another WordPress-aware tool because serialized database values can break with naive SQL replacement.
+- Production cutover should include DNS TTL planning, HTTPS, backups, monitoring, rollback windows, and client approval.
+
+These tradeoffs are useful because they make the project honest: migration is not only copying files and importing SQL. The value is in repeatable infrastructure, preflight checks, controlled restoration, validation, and rollback planning.
+
 ## What Gets Migrated
 
 The migration workflow should preserve:
