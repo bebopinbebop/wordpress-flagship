@@ -1,4 +1,4 @@
-# wp-mig Guide
+# 🚚 wp-mig Guide
 
 `wp-mig` is the migration-focused environment for demonstrating how an existing WordPress site can be moved into AWS infrastructure managed by Terraform.
 
@@ -8,14 +8,14 @@ The first practical goal is a portfolio-safe migration workflow:
 Provision -> Export -> Transfer -> Restore -> Reconfigure -> Validate -> Rollback/Cleanup
 ```
 
-## Purpose
+## 🎯 Purpose
 
 - Build a clean AWS target for WordPress migrations.
 - Demonstrate EC2, RDS, S3, Terraform, Bash, WP-CLI, and migration validation.
 - Keep client content, database dumps, private keys, and secrets out of Git.
 - Show that migration is more than copying files: database URLs, serialized data, ownership, permissions, rollback, and validation all matter.
 
-## Architecture
+## 🧭 Architecture
 
 ```mermaid
 flowchart TD
@@ -39,7 +39,7 @@ flowchart TD
 
 There is no NAT Gateway, Load Balancer, CloudFront, ACM certificate, or automated DNS cutover yet. Those are future production-hardening steps.
 
-## Migration Target Summary
+## 🧩 Migration Target Summary
 
 `wp-mig` should be understood as a clean landing zone for WordPress rehosting work. It is not just another demo website; it is the environment that proves a repeatable migration workflow can move an existing WordPress site into AWS-managed infrastructure without blindly copying old server settings.
 
@@ -61,7 +61,7 @@ flowchart TD
 
 The target infrastructure is intentionally similar to `wp-rds` because migrations usually need a realistic destination: a web server, a managed database, storage for transfer artifacts, and a repeatable teardown path.
 
-## Technical Implementation Notes
+## 🛠️ Technical Implementation Notes
 
 The `wp-mig` Terraform root is located at `terraform/environments/wp-mig`. It reuses the `wp-rds` style architecture so migration demos can focus on migration mechanics instead of a completely different hosting model.
 
@@ -78,7 +78,7 @@ Core technical behaviors:
 
 The migration scripts are designed to keep sensitive material out of Git. Generated artifacts go under `.generated/migrations`, while real database exports, source content packages, checksums, and manifests remain local and ignored.
 
-## What This Demonstrates
+## 💼 What This Demonstrates
 
 From a portfolio and freelance-client perspective, `wp-mig` demonstrates that the project is not limited to brand-new WordPress installs. It introduces the beginning of a rehosting workflow that can later support client migrations from shared hosting, unmanaged VPS servers, or another cloud provider into AWS.
 
@@ -95,7 +95,7 @@ Skills demonstrated:
 - Rollback-first migration thinking.
 - Clean teardown of migration targets and leftover snapshots.
 
-## Important Tradeoffs
+## ⚖️ Important Tradeoffs
 
 `wp-mig` is currently a staged migration foundation, not a complete one-click production migration tool:
 
@@ -108,7 +108,7 @@ Skills demonstrated:
 
 These tradeoffs are useful because they make the project honest: migration is not only copying files and importing SQL. The value is in repeatable infrastructure, preflight checks, controlled restoration, validation, and rollback planning.
 
-## What Gets Migrated
+## 📦 What Gets Migrated
 
 The migration workflow should preserve:
 
@@ -126,7 +126,7 @@ The workflow should not blindly copy:
 - Private keys, AWS credentials, or production secrets.
 - Client database dumps into Git.
 
-## First Supported Flow
+## 🛣️ First Supported Flow
 
 The first implemented migration path is:
 
@@ -162,7 +162,7 @@ This first step exports only the source database. `wp-content.tar.gz`, S3 upload
 
 Migration artifacts must not contain AWS credentials, private SSH keys, Terraform state, database passwords, source `wp-config.php`, or `.env` secrets. The `.generated/` folder is ignored by Git.
 
-## Step 1: Provision The Target
+## 🚀 Step 1: Provision The Target
 
 Run the normal launcher:
 
@@ -178,7 +178,7 @@ wp-mig
 
 This provisions the AWS migration target: EC2, private RDS MySQL, S3, VPC networking, security groups, and the WordPress bootstrap.
 
-## Step 2: Run Migration Preflight
+## ✅ Step 2: Run Migration Preflight
 
 Before moving data, run the read-only `wp-lite` source preflight:
 
@@ -229,7 +229,7 @@ The preflight checks:
 - Source WordPress filesystem markers such as `wp-config.php` and `wp-content`.
 - WP-CLI source database authentication when WP-CLI is installed and a source path is provided.
 
-## Step 3: Export Source
+## 📤 Step 3: Export Source
 
 Export the source database:
 
@@ -262,7 +262,7 @@ database.sql.gz
 
 The script then writes a non-sensitive `manifest.json` and verifies `checksums.sha256`.
 
-## Step 4: Restore Into Target
+## 📥 Step 4: Restore Into Target
 
 The restore phase should:
 
@@ -275,7 +275,7 @@ The restore phase should:
 - Fix ownership and permissions.
 - Restart Apache if needed.
 
-## Step 5: Validate
+## 🔎 Step 5: Validate
 
 Validation should confirm:
 
@@ -289,7 +289,7 @@ Validation should confirm:
 - Uploads directory exists.
 - Plugins and theme files are present.
 
-## Rollback
+## ↩️ Rollback
 
 Before importing over an existing target, preserve:
 
@@ -299,7 +299,7 @@ Before importing over an existing target, preserve:
 
 For demos, rollback can be simple: restore the preserved target database and `wp-content`, then rerun validation.
 
-## Cleanup
+## 🧹 Cleanup
 
 Destroy the migration target when finished:
 
@@ -313,7 +313,7 @@ To inspect possible resources without deleting:
 ./scripts/destroy-stack.sh --env wp-mig --scan-only --profile your-profile-name
 ```
 
-## Current Status
+## 📌 Current Status
 
 Implemented:
 

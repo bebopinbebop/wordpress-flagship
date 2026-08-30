@@ -1,10 +1,10 @@
-# wp-rds Guide
+# 🗄️ wp-rds Guide
 
 `wp-rds` is the more realistic development environment.
 
 It creates one EC2 instance for WordPress, one RDS MySQL database in private subnets, and one S3 bucket reserved for backups. It does not include NAT Gateway, Load Balancer, or CloudFront yet.
 
-## Architecture Summary
+## 🧭 Architecture Summary
 
 `wp-rds` is the next step after `wp-lite`. It keeps the WordPress web tier on EC2, but moves the database tier into Amazon RDS MySQL inside private subnets. This creates a more realistic hosting model because the web server and database are separated, database access is controlled by security groups, and S3 is available for backup-oriented workflows.
 
@@ -27,14 +27,14 @@ flowchart LR
 
 The EC2 instance is still public for demo simplicity, but the RDS database is not publicly exposed. WordPress reaches RDS through the internal VPC network using the database endpoint Terraform passes into the EC2 bootstrap process.
 
-## Best Use Cases
+## 🎯 Best Use Cases
 
 - Demonstrating separation between application and database tiers.
 - Practicing private RDS networking.
 - Testing backup workflows with S3.
 - Preparing for later production hardening.
 
-## Technical Implementation Notes
+## 🛠️ Technical Implementation Notes
 
 The `wp-rds` Terraform root is located at `terraform/environments/wp-rds`. It reuses the same module pattern as `wp-lite`, then adds managed database and storage resources.
 
@@ -51,7 +51,7 @@ Core technical behaviors:
 
 During first boot, EC2 User Data installs Apache, PHP extensions, WP-CLI, WordPress, and the AWS CLI. It writes `wp-config.php` with the RDS connection values, runs the first WordPress install through WP-CLI, seeds basic pages/navigation, and creates the admin-only RDS + S3 lab page.
 
-## What This Demonstrates
+## 💼 What This Demonstrates
 
 From a portfolio perspective, `wp-rds` shows that the project can move beyond a single-server demo into a more realistic cloud architecture.
 
@@ -68,7 +68,7 @@ Skills demonstrated:
 - RDS + S3 demo functionality visible inside WordPress.
 - Cost-aware cleanup using Terraform destroy and S3 `force_destroy` for disposable demos.
 
-## Important Tradeoffs
+## ⚖️ Important Tradeoffs
 
 `wp-rds` is more realistic than `wp-lite`, but it is still intentionally demo-focused:
 
@@ -82,7 +82,7 @@ Skills demonstrated:
 
 These choices keep the environment approachable for portfolio demos while preserving a clear path toward production hardening.
 
-## Deploy
+## 🚀 Deploy
 
 Guided deployment:
 
@@ -103,7 +103,7 @@ After the instance finishes bootstrapping:
 - Visit `/demo/` for the static Terraform/AWS demo pages.
 - Visit `/demo/rds-lab.php` for the admin-only RDS + S3 lab.
 
-## RDS + S3 Lab
+## 🧪 RDS + S3 Lab
 
 The `wp-rds` bootstrap creates an admin-only demo page at `/demo/rds-lab.php`.
 
@@ -126,7 +126,7 @@ terraform apply
 
 The `backup_bucket_name` value must be globally unique. Keep real database and WordPress admin passwords out of Git.
 
-## Seed Demo Content
+## 🌱 Seed Demo Content
 
 After WordPress is installed, copy the seed script to the EC2 instance and run it:
 
@@ -135,7 +135,7 @@ scp scripts/seed-wordpress.sh ubuntu@your-instance-public-dns:/tmp/seed-wordpres
 ssh ubuntu@your-instance-public-dns "chmod +x /tmp/seed-wordpress.sh && sudo SITE_URL='http://your-instance-public-dns' /tmp/seed-wordpress.sh"
 ```
 
-## Destroy
+## 🧹 Destroy
 
 ```bash
 ./scripts/destroy-stack.sh --env wp-rds --profile your-profile-name
@@ -151,7 +151,7 @@ To inspect possible project resources without deleting anything:
 ./scripts/destroy-stack.sh --env wp-rds --scan-only --profile your-profile-name
 ```
 
-## Diagnose
+## 🔎 Diagnose
 
 For a safe read-only check of the EC2 instance, RDS database, S3 bucket, and HTTP endpoint:
 

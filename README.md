@@ -44,6 +44,18 @@ Once all is cleared and good to go, from the project root, you can run:
 ![WP-Flagship intro gif](images/gifs/gif1_intro.gif)
 📌the project is going to perform another systems check to see if all needed packages are installed.
 
+## Things ToDo:
+
+- README is polished.
+- All three guides are consistent.
+- GIF/screenshots exist.
+- wp-lite, wp-rds, and wp-mig deploy successfully.
+- Destroy script reliably cleans up resources.
+- GitHub Actions pass.
+- No secrets/state files are tracked.
+- one clean “case study” section explaining the business value.
+
+
 ## ✨ Features
 
 The project pushes WordPress on AWS resources by one of three ways, described below:
