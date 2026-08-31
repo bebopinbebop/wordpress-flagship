@@ -15,9 +15,9 @@ Below is a detailed breakdown of the project with supporting documents linked th
 -  [QuickStart](#-quickstart)
 -  [Features](#-features)
 -  [Architecture](#-architecture-at-a-glance)
+-  [Tech Stack & Notes](#️-tech-stack--notes)
 -  [Continuous Integration](#-continuous-integration)
 -  [Project Structure](#️-project-structure)
--  [Tech Stack & Notes](#️-tech-stack--notes)
 -  [Tagging Architecture](#️-tagging)
 -  [TODO](#-todo)
 
@@ -51,15 +51,25 @@ Once all is cleared and good to go, from the project root, you can run:
 
 The project pushes WordPress on AWS resources by one of three ways, described below:
 
+<!-- ![Project Breakdown](images/project-breakdown.png) -->
+```mermaid
+flowchart TD
+    wp-flagship
+    wp-lite["1. wp-lite"]
+    wp-rds["2. wp-rds"]
+    wp-mig["3. wp-mig"]
+
+    wp-flagship --> wp-lite
+    wp-flagship --> wp-rds
+    wp-flagship --> wp-mig
+```
 1. [wp-lite](#wp-lite-light-version)
 2. [wp-rds](#wp-rds-relational-database-services)
 3. [wp-mig](#wp-mig-migration)
 
-![Project Breakdown](images/project-breakdown.png)
-
 Each of the aforementioned sections in this project have their own dedicated documentation to act as a guide in how to operate them, with troubleshooting tips and explanations detailing the demo.
 
-In the `Terraform` folder, there are three environments (`wp-lite`, `wp-rds`, `wp-mig`) that each contain their own resource definitions that will be built by `aws`. Some definations are built off from previous ones, such as `wp-rds` being an extended version of `wp-lite`.
+In the `Terraform` folder, there are three environments (`wp-lite`, `wp-rds`, `wp-mig`) that each contain their own resource definitions that will be built by `aws`. Some definitions are built off from previous ones, such as `wp-rds` being an extended version of `wp-lite`.
 
 In essence, each project section creates an `ec2` instance that is then preloaded with `wordpress`, and then custom Security Groups, IAM permissions and attached resources build the necessary backend to support a fully functional webpage.
 
@@ -121,17 +131,19 @@ The repository is organized around reusable Terraform modules and separate envir
 
 The essential flow is:
 ```mermaid
-flowchart TD
+flowchart LR
     User["🖥️ terminal: wp-flagship\n./scripts/start-demo.sh"]
     USER((👤 User))
     Terraform{{🏗️ Terraform}}
     RDS[(🗄️ RDS - MySQL)]
     S3[(🪣 S3\nwp-rds: backup\nwp-mig: migration)]
+    
 
     subgraph AWS["☁️ AWS Cloud - VPC"]
         Security
-        subgraph VPC["🌐 wp-rds, wp-mig"]
-            subgraph PUBLIC["wp-lite"]
+        subgraph VPC["🗄️ wp-rds, 🚚 wp-mig"]
+        S3
+            subgraph PUBLIC["🪶wp-lite"]
                 subgraph EC2[🖥️ EC2]
                     Wordpress[Wordpress:\nApache + PHP]
                     MariaDB
@@ -141,8 +153,8 @@ flowchart TD
                 end
             end
 
-            RDS
-            S3
+        RDS
+            
         end
     end
 
@@ -156,15 +168,13 @@ flowchart TD
     User --> Terraform
 
     Terraform --> EC2
-    Terraform --> Security["Security Group"]
+    Terraform --> Security["🔑 Security Group"]
     Terraform --> RDS
     Terraform --> S3
     
 
-    EC2 --- S3
-    EC2 --- RDS
-
-    
+    EC2 ---- S3
+    EC2 --- RDS    
 ```
 
 From an Infrastructure as Code perspective, the project demonstrates environment separation, reusable modules, repeatable EC2 bootstrap automation, security group scoping, database tier choices, S3-backed demo storage, AWS resource tagging, and safe destroy workflows for short-lived portfolio deployments.
