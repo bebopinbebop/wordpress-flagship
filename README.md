@@ -14,20 +14,21 @@ Below is a detailed breakdown of the project with supporting documents linked th
 
 -  [QuickStart](#-quickstart)
 -  [Features](#-features)
+-  [Architecture](#-architecture-at-a-glance)
 -  [Continuous Integration](#-continuous-integration)
 -  [Project Structure](#️-project-structure)
 -  [Tech Stack & Notes](#️-tech-stack--notes)
 -  [Tagging Architecture](#️-tagging)
-
+-  [TODO](#-todo)
 
 ## 🚀 QuickStart
 First, clone the repo into your desired path using:
-```
-https://github.com/bebopinbebop/wordpress-flagship.git
+```bash
+git clone https://github.com/bebopinbebop/wordpress-flagship.git
 ```
 
 Then you must install any prerequisites that may be missing by running this in the project root:
-```
+```bash
 chmod 700 scripts/install-prereqs.sh
 ./scripts/install-prereqs.sh
 ```
@@ -38,23 +39,13 @@ This will install some fundemental packages like `aws`, `terraform`, and `openss
 ⚠️ You must have an existing EC2 key-pair in your account that can be used by the script to help encrypt the box and facilitate `ssh` if needed.
 
 Once all is cleared and good to go, from the project root, you can run:
-```
+```bash
 ./scripts/start-demo.sh
 ```
 ![WP-Flagship intro gif](images/gifs/gif1_intro.gif)
 📌the project is going to perform another systems check to see if all needed packages are installed.
 
-## Things ToDo:
-
-- README is polished.
-- All three guides are consistent.
-- GIF/screenshots exist.
-- wp-lite, wp-rds, and wp-mig deploy successfully.
-- Destroy script reliably cleans up resources.
-- GitHub Actions pass.
-- No secrets/state files are tracked.
-- one clean “case study” section explaining the business value.
-
+✅ From there, you may choose how you want to deploy WordPress for your intended purposes.
 
 ## ✨ Features
 
@@ -76,26 +67,6 @@ Each section varies in how much resources are attached to it for a diverse capab
 
 The end goal would be that for an individual to then login to the `\wp-admin` page and edit their WordPress webpage as they prefer.
 
-## 🧭 Architecture at a Glance
-
-The repository is organized around reusable Terraform modules and separate environment roots. Each environment calls the same module patterns where possible, then changes the database, storage, and migration behavior based on the target demo path.
-
-```mermaid
-flowchart TD
-    User["User / Browser"] -->|HTTP :80| EC2["EC2 WordPress Web Server"]
-    Admin["WordPress Admin /wp-admin"] -->|CMS edits| EC2
-    EC2 -->|Apache + PHP| WP["WordPress Application"]
-    WP -->|wp-lite| LocalDB["Local MariaDB on EC2"]
-    WP -->|wp-rds / wp-mig| RDS["Private RDS MySQL"]
-    EC2 -->|wp-rds / wp-mig demo artifacts| S3["S3 Backup / Migration Bucket"]
-    Terraform["Terraform Environment Root"] --> VPC["Custom VPC, Subnets, Route Tables"]
-    Terraform --> SG["Security Groups"]
-    Terraform --> EC2
-    Terraform --> RDS
-    Terraform --> S3
-```
-
-From an Infrastructure as Code perspective, the project demonstrates environment separation, reusable modules, repeatable EC2 bootstrap automation, security group scoping, database tier choices, S3-backed demo storage, AWS resource tagging, and safe destroy workflows for short-lived portfolio deployments.
 
 ## 🪶 wp-lite (Light Version)
 **`wp-lite`** is a cost-effective environment that uses Terraform to deploy a complete WordPress stack (Apache, PHP, MariaDB, and WordPress) on a single EC2 instance within a custom AWS VPC. It's intended for portfolio demonstrations, testing, and rapid deployment while keeping AWS costs to a minimum. See further detail [here](docs/wp-lite-guide.md).
@@ -144,6 +115,59 @@ It separates the web and database tiers while securing the internal networking, 
 - Future HTTPS support (ACM + Load Balancer)
 - Future backup, monitoring, and production-readiness validation
 
+## 🧭 Architecture at a Glance
+
+The repository is organized around reusable Terraform modules and separate environment roots. Each environment calls the same module patterns where possible, then changes the database, storage, and migration behavior based on the target demo path.
+
+The essential flow is:
+```mermaid
+flowchart TD
+    User["🖥️ terminal: wp-flagship\n./scripts/start-demo.sh"]
+    USER((👤 User))
+    Terraform{{🏗️ Terraform}}
+    RDS[(🗄️ RDS - MySQL)]
+    S3[(🪣 S3\nwp-rds: backup\nwp-mig: migration)]
+
+    subgraph AWS["☁️ AWS Cloud - VPC"]
+        Security
+        subgraph VPC["🌐 wp-rds, wp-mig"]
+            subgraph PUBLIC["wp-lite"]
+                subgraph EC2[🖥️ EC2]
+                    Wordpress[Wordpress:\nApache + PHP]
+                    MariaDB
+
+                    Wordpress --- MariaDB
+                    
+                end
+            end
+
+            RDS
+            S3
+        end
+    end
+
+    USER -.- |login: wp-admin| Wordpress
+    
+    USER --> User
+    Security -.- RDS
+    Security -.- EC2
+    Security -.- S3
+
+    User --> Terraform
+
+    Terraform --> EC2
+    Terraform --> Security["Security Group"]
+    Terraform --> RDS
+    Terraform --> S3
+    
+
+    EC2 --- S3
+    EC2 --- RDS
+
+    
+```
+
+From an Infrastructure as Code perspective, the project demonstrates environment separation, reusable modules, repeatable EC2 bootstrap automation, security group scoping, database tier choices, S3-backed demo storage, AWS resource tagging, and safe destroy workflows for short-lived portfolio deployments.
 
 ## 🛠️ Tech Stack & Notes
 Below is a breakdown of what the project builds/uses, and also the reasoning for certain decisions for the project.
@@ -169,9 +193,16 @@ Notes as to why certain constraints where chosen:
 
 ## 🔄 Continuous Integration
 
-This repository uses GitHub Actions to validate Terraform code on pushes to `main` and on pull requests.
+This repository uses GitHub Actions to validate Terraform code on pushes to `main` and on pull requests, as seen below:
 
-The Terraform Checks workflow runs `terraform fmt -check -recursive`, verifies Bash script syntax recursively under `scripts/`, runs ShellCheck, checks that local Terraform state and `.tfvars` files are not committed, and runs `terraform init -backend=false` plus `terraform validate` for the implemented Terraform environments.
+[![Terraform Checks](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml/badge.svg)](https://github.com/bebopinbebop/wordpress-flagship/actions/workflows/terraform-checks.yml)
+
+The Terraform Checks workflow does the following:
+- runs `terraform fmt -check -recursive`
+- verifies Bash script syntax recursively under `scripts/`
+- runs ShellCheck
+- checks that local Terraform state and `.tfvars` files are not committed
+- runs `terraform init -backend=false` plus `terraform validate` for the implemented Terraform environments.
 
 The workflow validates the implemented Terraform environments: `wp-lite`, `wp-rds`, and `wp-mig`.
 
@@ -219,9 +250,11 @@ Below is the expected layout from the project root. Some things are ignored to s
 ```
 
 
-## Secret Handling
+## 🔑 Secret Handling
 
-Do not commit real secrets. The guided launcher writes deployment values to an ignored local `terraform.tfvars` file so Terraform can bootstrap the demo without storing credentials in Git.
+🚫 Do not commit real secrets 🚫
+
+ The guided launcher writes deployment values to an ignored local `terraform.tfvars` file so Terraform can bootstrap the deployment without storing credentials in Git.
 
 For the current MVP, keep these values local:
 
@@ -230,7 +263,7 @@ For the current MVP, keep these values local:
 - EC2 SSH key material.
 - AWS CLI profile configuration.
 
-Future production work should move secrets into AWS Secrets Manager or AWS Systems Manager Parameter Store.
+📋 Future production work should move secrets into AWS Secrets Manager or AWS Systems Manager Parameter Store.
 
 ## 🏷️ Tagging
 
@@ -265,3 +298,13 @@ Read-only resource discovery is available with:
 More detail about this tagging mechanism can be found [here](docs/tagging-architecture.md)
 
 
+## 📋 TODO:
+
+- README polish
+- All three guides are consistent.
+- GIF/screenshots
+- wp-lite, wp-rds, and wp-mig deploy successfully.
+- Destroy script reliably cleans up resources.
+- GitHub Actions pass.
+- No secrets/state files are tracked.
+- one clean “case study” section explaining the business value.
