@@ -16,6 +16,7 @@ Below is a detailed breakdown of the project with supporting documents linked th
 -  [Features](#-features)
 -  [Architecture](#-architecture-at-a-glance)
 -  [Tech Stack & Notes](#️-tech-stack--notes)
+-  [Terraform Architecture](docs/terraform-architecture.md)
 -  [Continuous Integration](#-continuous-integration)
 -  [Project Structure](#️-project-structure)
 -  [Tagging Architecture](#️-tagging)
@@ -178,6 +179,8 @@ flowchart LR
 ```
 
 From an Infrastructure as Code perspective, the project demonstrates environment separation, reusable modules, repeatable EC2 bootstrap automation, security group scoping, database tier choices, S3-backed demo storage, AWS resource tagging, and safe destroy workflows for short-lived portfolio deployments.
+
+⚠️ A very fundamental building block of this project is the concept of reusability, and biggest implemnatation of that is that of the `EC2 User Data` script; what the EC2 Instance first runs when it's first made. The script may be marveled EC2 [here](/terraform/modules/ec2/user-data.sh.tftpl).
 
 ## 🛠️ Tech Stack & Notes
 Below is a breakdown of what the project builds/uses, and also the reasoning for certain decisions for the project.

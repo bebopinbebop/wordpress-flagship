@@ -4,36 +4,52 @@
 
 It creates one EC2 instance and installs both WordPress and MariaDB on that same instance. It does not create RDS, NAT Gateway, Load Balancer, or CloudFront.
 
-## Architecture Summary
+![wp-hello-world](../images/gifs/gif6_wp-hello-world.gif)
+
+## 🏗️ Architecture Summary
 
 `wp-lite` is designed as the smallest useful WordPress-on-AWS proof of concept. It keeps the web server, PHP runtime, WordPress files, and MariaDB database on one EC2 instance so the deployment stays inexpensive, easy to understand, and easy to destroy after a demonstration.
 
 ```mermaid
 flowchart LR
-    Browser["Browser"] -->|HTTP :80| SG["Security Group"]
-    SG --> EC2["Public EC2 Instance"]
-    EC2 --> Apache["Apache"]
-    Apache --> PHP["PHP Runtime"]
-    PHP --> WP["WordPress"]
-    WP --> MariaDB["Local MariaDB"]
-    EC2 --> Demo["/demo Static Site"]
-    Terraform["Terraform wp-lite Root"] --> VPC["Custom VPC"]
-    Terraform --> SG
+    User["🖥️ terminal: wp-flagship\n./scripts/start-demo.sh"]
+    USER((👤 User))
+    Terraform{{🏗️ Terraform}}
+
+    subgraph AWS["☁️ AWS Cloud - VPC"]
+        Security
+  
+            subgraph PUBLIC["🪶wp-lite"]
+                subgraph EC2[🖥️ EC2]
+                    Wordpress[Wordpress:\nApache + PHP]
+                    MariaDB
+
+                    Wordpress --- MariaDB
+                    
+                end
+            end
+
+    end
+
+    USER -.- |login: wp-admin| Wordpress
+    USER --> User
+    User --> Terraform
+
+    Security -.- EC2
+
     Terraform --> EC2
+    Terraform --> Security["🔑 Security Group"]
+   
 ```
 
-This environment is intentionally not production-grade. Its value is that it proves the full deployment lifecycle: Terraform creates AWS infrastructure, EC2 User Data bootstraps the server, WordPress becomes available in the browser, and the destroy script can remove the stack afterward.
+⚠️ This environment is intentionally not production-grade. Its value is that it proves the full deployment lifecycle: Terraform creates AWS infrastructure, EC2 User Data bootstraps the server, WordPress becomes available in the browser, and the destroy script can remove the stack afterward.
 
-## Best Use Cases
 
-- Portfolio demos.
-- Short-lived screenshots.
-- Practicing Terraform workflows.
-- Testing WordPress bootstrap scripts.
+## 🧩 Technical Implementation Notes
 
-## Technical Implementation Notes
+The `wp-lite` Terraform root is located at `terraform/environments/wp-lite`.
 
-The `wp-lite` Terraform root is located at `terraform/environments/wp-lite`. It calls shared modules for networking, security, and compute instead of defining every AWS resource directly in one file.
+It calls shared modules from `terraform/modules/` for networking, security, and compute instead of defining every AWS resource directly in one file.
 
 Core technical behaviors:
 
@@ -45,7 +61,9 @@ Core technical behaviors:
 - `site_archive_path` allows the launcher to package the static demo website and deploy it under `/demo/`.
 - `wp_admin_user`, `wp_admin_email`, and `wp_admin_password` are used by WP-CLI during first boot to create the WordPress admin login.
 
-During first boot, EC2 User Data performs the server configuration work that would otherwise be done manually over SSH:
+⚠️ Throughout the expression of each of these modules, the names of their internal components and features are dynamically loaded from the script from input variables at the beginning of runtime. This is to enforce tagging throughout the project. More detail [here](/docs/tagging-architecture.md).
+
+During first boot, EC2 [User Data](/terraform/modules/ec2/user-data.sh.tftpl) performs the server configuration work that would otherwise be done manually over SSH:
 
 - Installs Apache, PHP extensions, MariaDB, WP-CLI, and helper packages.
 - Creates the local MariaDB database and WordPress database user.
@@ -56,9 +74,8 @@ During first boot, EC2 User Data performs the server configuration work that wou
 - Copies the static infrastructure demo into `/var/www/html/demo`.
 - Restarts Apache after file permissions are set.
 
-## What This Demonstrates
 
-From a portfolio perspective, `wp-lite` demonstrates more than launching a virtual machine. It shows that the repository can automate a complete application stack with repeatable infrastructure and application bootstrap logic.
+`wp-lite` shows that the repository can automate a complete application stack with repeatable infrastructure and application bootstrap logic.
 
 Skills demonstrated:
 
@@ -73,24 +90,21 @@ Skills demonstrated:
 - Git-safe handling of local `.tfvars` values.
 - Cost-conscious teardown through the destroy helper.
 
-## Important Tradeoffs
+## ⚖️ Important Tradeoffs
 
 `wp-lite` is intentionally simple, so it accepts tradeoffs that would not be ideal for a production client site:
 
 - The database is on the same EC2 instance, so losing the instance can also lose the database unless backups are taken.
-- There is no load balancer, so traffic goes directly to the EC2 public endpoint.
-- There is no ACM certificate or HTTPS automation yet.
+- There is no load balancer, so traffic goes directly to the EC2 public endpoint. Could be overwhelmed.
+- There is no ACM certificate or HTTPS automation yet. For now, you would have to manually do set that up
 - SSH may be opened broadly during testing unless the user provides a narrower CIDR range.
 - Scaling is vertical only; increasing capacity means changing the EC2 instance size.
 - Backups, monitoring, and managed database recovery are better handled by the later `wp-rds` path.
 
 These tradeoffs are acceptable for a disposable demo environment, but the project intentionally separates `wp-rds` and `wp-mig` so more realistic hosting and migration patterns can be demonstrated later.
 
-## You can add your own domain in the backend so that it has a proper site domain
 
-!!! todo: demonstrate how to add ACM to create a https domain from person's choosing
-
-## Deploy a wp-lite env
+## 🚀 Deploy a wp-lite env
 
 ![long demo gif](../images/gifs//gif3_wp_lite_setup.gif)
 🟢NOTE: The CLI has default parameters set in `[default-value]` which automatically apply by just pressing `Enter`.
@@ -130,17 +144,31 @@ Once set, the script will start Terraform, scaffolding resouces to then push ont
 ![create](../images/wp-lite/create_resources.png)
 
 ## 4. Cloud Built, Checking Endpoints
-Then the script will run a while, building AWS resources through the local aws sso account set up before. There will be a heartbeat check on whether the EC2 instance is ready to be visited online:
+
+The script is going to pivot away from a bash process and start running ``terraform`` outputs, do not be perturbed if it hangs for a bit. Below is a speed up version after you type ``yes``, confirming ``terraform``:
+![terraform-block](../images/gifs/gif4_terraform-block.gif)
+
+After the script runs, there will be a heartbeat check on whether the EC2 instance is ready to be visited online:
+
 ![outputs](../images/wp-lite/outputs.png)
+
 
 ## 5. Display login info
 And then all the login information, to both the MariaDB and the Wordpress Admin page, with proper endpoint URLs are displayed for you to click through:
 ![outputs_final](../images/wp-lite/outputs-final.png)
 
-With the links and login information provided, you can get to the homepage, and also the Wordpress dashboard to start editing your website:
+⚠️ You do not need to type in a password, ``ssl`` will build one for you and then the script will paste it in this terminal ^^
+
+## 6. Explore WordPress
+Once the script is done, you can access the public WordPress landing page and login using the information displayed by the terminal:
+![WP Admin Login](../images/gifs/gif5_wp-admin.gif)
+⚠️ You will be taken the placeholder website saved in the ``website/`` dir at project root. You can alter it as a boilerplate if needed.
 
 Homepage
 ![homepage](../images/wp-lite/homepage.png)
+
+AWS Dashboard showing pushed resources
+![aws-dashboard](../images/gifs/gif7_wp-aws-dashboard.gif)
 
 Login Page
 ![login](../images/wp-lite/login.png)
@@ -148,18 +176,19 @@ Login Page
 Wordpress Dashboard
 ![dash](../images/wp-lite/dashboard.png)
 
-When prompted for the database password, remember that this is the hidden MariaDB login WordPress uses internally. When prompted for the WordPress admin password, use a separate password for the `/wp-admin/` browser login.
+Uploading an image to WP
+![image-upload](/images/gifs/gif8_upload_image.gif)
 
-After the site is live, the WordPress admin password can be changed from the WordPress dashboard.
+🟢 When prompted for the database password, remember that this is the hidden MariaDB login WordPress uses internally. When prompted for the WordPress admin password, use a separate password for the `/wp-admin/` browser login.
 
-After the instance finishes bootstrapping:
+🟢 After the site is live, the WordPress admin password can be changed from the WordPress dashboard.
 
+🟢 After the instance finishes bootstrapping:
 - Visit `/` for the WordPress site.
 - Visit `/wp-admin/` for WordPress admin.
 - Visit `/demo/` for the static Terraform/AWS demo pages.
 
-Manual deployment:
-
+🟢 You can manually deploy the terraform plan by doing the following:
 ```bash
 cd terraform/environments/wp-lite
 terraform init
@@ -167,21 +196,13 @@ terraform plan
 terraform apply
 ```
 
-Use placeholder values in committed files. Provide real database and WordPress admin passwords only through local variables, environment variables, or an ignored `.tfvars` file.
+🟢 Use placeholder values in committed files. Provide real database and WordPress admin passwords only through local variables, environment variables, or an ignored `.tfvars` file.
 
-## Seed Demo Content
+## 🗑️ Destroy
 
-After WordPress is installed, copy the seed script to the instance and run it:
-
-```bash
-scp scripts/seed-wordpress.sh ubuntu@your-instance-public-dns:/tmp/seed-wordpress.sh
-ssh ubuntu@your-instance-public-dns "chmod +x /tmp/seed-wordpress.sh && sudo SITE_URL='http://your-instance-public-dns' /tmp/seed-wordpress.sh"
-```
-
-## Destroy
-
-Destroy this environment when the demo is finished.
+Destroy this environment when the demo is finished, and follow the instructions the script presents to you.
 
 ```bash
 ./scripts/destroy-stack.sh
 ```
+More information on stack deletion can be found [here](/docs/destroy-guide.md).
