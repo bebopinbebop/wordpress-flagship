@@ -10,19 +10,48 @@ It creates one EC2 instance for WordPress, one RDS MySQL database in private sub
 
 ```mermaid
 flowchart LR
-    Browser["Browser"] -->|HTTP :80| WebSG["WordPress Security Group"]
-    WebSG --> EC2["Public EC2 WordPress Server"]
-    EC2 --> Apache["Apache + PHP"]
-    Apache --> WP["WordPress"]
-    WP -->|MySQL :3306| DbSG["Database Security Group"]
-    DbSG --> RDS["Private RDS MySQL"]
-    EC2 -->|demo uploads / future backups| S3["S3 Backup Bucket"]
-    Terraform["Terraform wp-rds Root"] --> VPC["Custom VPC"]
-    Terraform --> WebSG
-    Terraform --> DbSG
+    User["🖥️ terminal: wp-flagship\n./scripts/start-demo.sh"]
+    USER((👤 User))
+    Terraform{{🏗️ Terraform}}
+    RDS[(🗄️ RDS - MySQL)]
+    S3[(🪣 S3\nwp-rds: backup)]
+    
+
+    subgraph AWS["☁️ AWS Cloud - VPC"]
+        Security
+        subgraph VPC["🗄️ wp-rds"]
+        S3
+            subgraph EC2[🖥️ EC2]
+        
+                Wordpress[Wordpress:\nApache + PHP]
+                MariaDB
+                Wordpress --- MariaDB
+                
+            end
+            
+
+        RDS
+            
+        end
+    end
+
+    USER -.- |login: wp-admin| Wordpress
+    
+    USER --> User
+    Security -.- RDS
+    Security -.- EC2
+    Security -.- S3
+
+    User --> Terraform
+
     Terraform --> EC2
+    Terraform --> Security["🔑 Security Group"]
     Terraform --> RDS
     Terraform --> S3
+    
+
+    EC2 ---- S3
+    EC2 --- RDS    
 ```
 
 The EC2 instance is still public for demo simplicity, but the RDS database is not publicly exposed. WordPress reaches RDS through the internal VPC network using the database endpoint Terraform passes into the EC2 bootstrap process.
@@ -125,15 +154,6 @@ terraform apply
 ```
 
 The `backup_bucket_name` value must be globally unique. Keep real database and WordPress admin passwords out of Git.
-
-## 🌱 Seed Demo Content
-
-After WordPress is installed, copy the seed script to the EC2 instance and run it:
-
-```bash
-scp scripts/seed-wordpress.sh ubuntu@your-instance-public-dns:/tmp/seed-wordpress.sh
-ssh ubuntu@your-instance-public-dns "chmod +x /tmp/seed-wordpress.sh && sudo SITE_URL='http://your-instance-public-dns' /tmp/seed-wordpress.sh"
-```
 
 ## 🧹 Destroy
 

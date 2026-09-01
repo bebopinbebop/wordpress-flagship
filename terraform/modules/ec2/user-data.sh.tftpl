@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # EC2 user data runs once when the instance first boots.
-# Keep this file small: AWS limits EC2 user_data to 16 KB.
+# AWS limits EC2 user_data to 16 KB, unless you use S3 to save a larger file
 
 set -euo pipefail
 exec > >(tee -a /var/log/wordpress-bootstrap.log) 2>&1
