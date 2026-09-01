@@ -39,6 +39,49 @@ flowchart TD
 
 There is no NAT Gateway, Load Balancer, CloudFront, ACM certificate, or automated DNS cutover yet. Those are future production-hardening steps.
 
+```mermaid
+flowchart LR
+    User["🖥️ terminal: wp-flagship\n./scripts/start-demo.sh"]
+    USER((👤 User))
+    Terraform{{🏗️ Terraform}}
+    RDS[(🗄️ RDS - MySQL)]
+    S3[(🪣 S3\nwp-mig: migration)]
+    
+
+    subgraph AWS["☁️ AWS Cloud - VPC"]
+        Security
+        subgraph VPC["🚚 wp-mig"]
+        S3 
+                subgraph EC2[🖥️ EC2]
+                    Wordpress[Wordpress:\nApache + PHP]
+                    MariaDB
+
+                    Wordpress --- MariaDB
+                    
+                end
+        RDS
+        end
+    end
+
+    USER -.- |login: wp-admin| Wordpress
+    
+    USER --> User
+    Security -.- RDS
+    Security -.- EC2
+    Security -.- S3
+
+    User --> Terraform
+
+    Terraform --> EC2
+    Terraform --> Security["🔑 Security Group"]
+    Terraform --> RDS
+    Terraform --> S3
+    
+
+    EC2 ---- S3
+    EC2 --- RDS    
+```
+
 ## 🧩 Migration Target Summary
 
 `wp-mig` should be understood as a clean landing zone for WordPress rehosting work. It is not just another demo website; it is the environment that proves a repeatable migration workflow can move an existing WordPress site into AWS-managed infrastructure without blindly copying old server settings.
