@@ -33,18 +33,18 @@ Then you must install any prerequisites that may be missing by running this in t
 chmod 700 scripts/install-prereqs.sh
 ./scripts/install-prereqs.sh
 ```
-This will install some fundemental packages like `aws`, `terraform`, and `openssl`.
+This will install some fundamental packages like `aws`, `terraform`, and `openssl`.
 
-⚠️ You must have an `aws` account locally configured into your terminal via SSO or CLI login (old school) so the script can create resources on your behalf. More information found [here](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html).
+⚠️ You must have an `aws` account locally configured in your terminal via SSO or CLI login so the script can create resources on your behalf. More information can be found [here](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html).
 
-⚠️ You must have an existing EC2 key-pair in your account that can be used by the script to help encrypt the box and facilitate `ssh` if needed.
+⚠️ You must have an existing EC2 key pair in your account that can be used by the script to support encrypted SSH access if needed.
 
 Once all is cleared and good to go, from the project root, you can run:
 ```bash
 ./scripts/start-demo.sh
 ```
 ![WP-Flagship intro gif](images/gifs/gif1_intro.gif)
-📌the project is going to perform another systems check to see if all needed packages are installed.
+📌 The project will perform another system check to confirm that all needed packages are installed.
 
 ✅ From there, you may choose how you want to deploy WordPress for your intended purposes.
 
@@ -68,22 +68,22 @@ flowchart TD
 2. [wp-rds](#wp-rds-relational-database-services)
 3. [wp-mig](#wp-mig-migration)
 
-Each of the aforementioned sections in this project have their own dedicated documentation to act as a guide in how to operate them, with troubleshooting tips and explanations detailing the demo.
+Each of the aforementioned sections in this project has its own dedicated documentation that explains how to operate it, with troubleshooting tips and demo details.
 
-In the `Terraform` folder, there are three environments (`wp-lite`, `wp-rds`, `wp-mig`) that each contain their own resource definitions that will be built by `aws`. Some definitions are built off from previous ones, such as `wp-rds` being an extended version of `wp-lite`.
+In the `Terraform` folder, there are three environments (`wp-lite`, `wp-rds`, `wp-mig`) that each contain their own resource definitions that will be built by AWS. Some definitions build from earlier patterns, such as `wp-rds` being an extended version of `wp-lite`.
 
-In essence, each project section creates an `ec2` instance that is then preloaded with `wordpress`, and then custom Security Groups, IAM permissions and attached resources build the necessary backend to support a fully functional webpage.
+In essence, each project section creates an EC2 instance that is preloaded with WordPress, while custom Security Groups, IAM permissions, and attached resources build the necessary backend to support a functional website.
 
-Each section varies in how much resources are attached to it for a diverse capability set, making each deployment uniquely equipped for a specific mission.
+Each section varies in how many resources are attached to it, creating a diverse capability set and making each deployment suited to a specific mission.
 
-The end goal would be that for an individual to then login to the `\wp-admin` page and edit their WordPress webpage as they prefer.
+The end goal is for an individual to log in to the `/wp-admin` page and edit their WordPress website as they prefer.
 
 
 ## 🪶 wp-lite (Light Version)
 **`wp-lite`** is a cost-effective environment that uses Terraform to deploy a complete WordPress stack (Apache, PHP, MariaDB, and WordPress) on a single EC2 instance within a custom AWS VPC. It's intended for portfolio demonstrations, testing, and rapid deployment while keeping AWS costs to a minimum. See further detail [here](docs/wp-lite-guide.md).
 
 - Custom VPC with public and private subnets.
-- One EC2 instance in a public subnet that installs WP via its **User Data** that's been altered.
+- One EC2 instance in a public subnet that installs WordPress through customized **User Data**.
 - MariaDB installed on the same instance to support WP functionality like blog postings, plugins, and config files.
 - No RDS, NAT Gateway, Load Balancer, or CloudFront.
 
@@ -180,7 +180,7 @@ flowchart LR
 
 From an Infrastructure as Code perspective, the project demonstrates environment separation, reusable modules, repeatable EC2 bootstrap automation, security group scoping, database tier choices, S3-backed demo storage, AWS resource tagging, and safe destroy workflows for short-lived portfolio deployments.
 
-⚠️ A very fundamental building block of this project is the concept of reusability, and biggest implemnatation of that is that of the `EC2 User Data` script; what the EC2 Instance first runs when it's first made. The script may be marveled EC2 [here](/terraform/modules/ec2/user-data.sh.tftpl).
+⚠️ A fundamental building block of this project is reusability. One of the biggest implementations of that idea is the `EC2 User Data` script, which is what the EC2 instance runs when it first boots. The EC2 User Data script can be reviewed [here](/terraform/modules/ec2/user-data.sh.tftpl).
 
 ## 🛠️ Tech Stack & Notes
 Below is a breakdown of what the project builds/uses, and also the reasoning for certain decisions for the project.
@@ -196,11 +196,11 @@ Below is a breakdown of what the project builds/uses, and also the reasoning for
 - PHP (from WordPress)
 - MariaDB
 
-Notes as to why certain constraints where chosen:
+Notes as to why certain constraints were chosen:
 
  - `Terraform` was chosen over AWS CloudFormation because Terraform is popular, vendor-neutral, and adaptable to other Cloud Service Providers (CSPs), meaning other companies feel safer having the option to spin up their infrastructure on another platform if their current CSP is lacking.
 
- - `aws` was chosen due to the huge market share that affords dependability and reliability for projects built on it. The economy-of-scale that AWS provides also functions as a good support network for when things go wrong.
+ - `AWS` was chosen due to the huge market share that affords dependability and reliability for projects built on it. The economies of scale that AWS provides also function as a good support network for when things go wrong.
 
  - `WordPress` was chosen due to how it affords companies that may not have a technical background to get a professional image out to their clients, and the huge market share that WordPress has as a Content Management System (CMS).
 
@@ -267,7 +267,7 @@ Below is the expected layout from the project root. Some things are ignored to s
 
 🚫 Do not commit real secrets 🚫
 
- The guided launcher writes deployment values to an ignored local `terraform.tfvars` file so Terraform can bootstrap the deployment without storing credentials in Git.
+The guided launcher writes deployment values to an ignored local `terraform.tfvars` file so Terraform can bootstrap the deployment without storing credentials in Git.
 
 For the current MVP, keep these values local:
 
@@ -280,7 +280,7 @@ For the current MVP, keep these values local:
 
 ## 🏷️ Tagging
 
-Since AWS supports key-pair tags, this project identifies artifacts made with ease. This is done so that anyone can find anything built within their AWS account by looking up tags.
+Since AWS supports resource tags, this project identifies created resources with ease. This is done so that anyone can find resources built within their AWS account by looking up tags.
 
 AWS resources are being organized around a standard tag identity model:
 
@@ -320,4 +320,4 @@ More detail about this tagging mechanism can be found [here](docs/tagging-archit
 - Destroy script reliably cleans up resources.
 - GitHub Actions pass.
 - No secrets/state files are tracked.
-- one clean “case study” section explaining the business value.
+- One clean “case study” section explaining the business value.
