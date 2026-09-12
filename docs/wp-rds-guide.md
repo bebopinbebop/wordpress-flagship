@@ -1,12 +1,14 @@
 # 🗄️ wp-rds Guide
 
+![rds1](../images/wp-rds/rds1.gif)
+
 `wp-rds` is the more realistic development environment.
 
 It creates one EC2 instance for WordPress, one RDS MySQL database in private subnets, and one S3 bucket reserved for backups. It does not include NAT Gateway, Load Balancer, or CloudFront yet.
 
 ## 🧭 Architecture Summary
 
-`wp-rds` is the next step after `wp-lite`. It keeps the WordPress web tier on EC2, but moves the database tier into Amazon RDS MySQL inside private subnets. This creates a more realistic hosting model because the web server and database are separated, database access is controlled by security groups, and S3 is available for backup-oriented workflows.
+`wp-rds` is the next step after `wp-lite`. In essence, it uses the `wp-lite` as the base plate. It keeps the WordPress web tier on EC2, but moves the database tier into Amazon RDS MySQL inside private subnets. This creates a more realistic hosting model because the web server and database are separated, database access is controlled by security groups, and S3 is available for backup-oriented workflows.
 
 ```mermaid
 flowchart LR
@@ -54,9 +56,9 @@ flowchart LR
     EC2 --- RDS    
 ```
 
-The EC2 instance is still public for demo simplicity, but the RDS database is not publicly exposed. WordPress reaches RDS through the internal VPC network using the database endpoint Terraform passes into the EC2 bootstrap process.
+The EC2 instance is still public for simplicity, but the RDS database is not publicly exposed. WordPress reaches RDS through the internal VPC network using the database endpoint Terraform passes into the EC2 bootstrap process.
 
-## 🎯 Best Use Cases
+## 🎯 What this proves
 
 - Demonstrating separation between application and database tiers.
 - Practicing private RDS networking.
@@ -113,17 +115,42 @@ These choices keep the environment approachable for portfolio demos while preser
 
 ## 🚀 Deploy
 
+### 1. Starting off
 Guided deployment:
 
 ```bash
 ./scripts/start-demo.sh
 ```
 
-Choose `wp-rds` when the launcher asks for the environment.
+Type in `wp-rds` when the launcher asks for the environment.
+
+![rds1](../images/wp-rds/rds1.gif)
+
+Just like `wp-lite`, the steps are basically the same, but the `terraform` script has some additional creations like `s3` and the private `rds`.
+
+### 2. Allowing Terraform to do its thing
+
+The script is going to pass off into `terraform`, where it will ask you to approve the resources to be pushed onto AWS. You will notice that the `terraform` plan looks similar to `wp-lite` except a bit more involved if you scroll up.
+
+![rds2](../images/wp-rds/rds2.gif)
+
+### 3. The Database infrastructure
+
+The `RDS` database does take a while for it to finalize, but in the initialization process, you can see that `aws` has built the resource.
+
+![rds3](../images/wp-rds/rds3.gif)
 
 The database password is the hidden RDS MySQL login WordPress uses internally. The WordPress admin password should remain a separate password for the `/wp-admin/` browser login.
 
 The launcher also asks for a globally unique S3 backup bucket name. The default includes your project name, AWS region, and AWS account ID to reduce naming conflicts.
+
+### 4. The Output
+
+![rds4](../images/wp-rds/rds4.gif)
+
+You can see that Apache has successfully been installed and then the WordPress landing page pops up.
+
+Use the output from the terminal to access the admin page.
 
 After the instance finishes bootstrapping:
 
@@ -136,6 +163,8 @@ After the instance finishes bootstrapping:
 
 The `wp-rds` bootstrap creates an admin-only demo page at `/demo/rds-lab.php`.
 
+![rds6](../images/wp-rds/rds6.gif)
+
 This page lets a WordPress administrator:
 
 - Add simple demo rows to the RDS-backed WordPress database.
@@ -144,7 +173,9 @@ This page lets a WordPress administrator:
 
 This is meant to make the RDS and S3 backend visible during portfolio demos. It is not a production file manager.
 
-Manual deployment:
+## Manual deployment:
+
+You can run the `terraform` scripts from the source by doing the following:
 
 ```bash
 cd terraform/environments/wp-rds

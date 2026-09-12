@@ -51,3 +51,6 @@ wp-content-*.tar.gz
 CI_LEARNING_NOTES.md
 
 demo.tape
+
+# Large local demo recordings
+images/wp-rds/rds5.gif
