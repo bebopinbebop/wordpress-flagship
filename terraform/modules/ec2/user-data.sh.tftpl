@@ -3,9 +3,10 @@
 # EC2 user data runs once when the instance first boots.
 # AWS limits EC2 user_data to 16 KB, unless you use S3 to save a larger file
 
-set -euo pipefail
-exec > >(tee -a /var/log/wordpress-bootstrap.log) 2>&1
+set -euo pipefail # PREVENT CRASHING WITH ERRORS
+exec > >(tee -a /var/log/wordpress-bootstrap.log) 2>&1 
 
+# LIST OF VARIABLES GATHERED AND USED TO BUILD THE CORRECT RESOURCES
 INSTALL_MODE="${install_mode}"
 SITE_TITLE="${site_title}"
 SITE_ARCHIVE_BASE64="${site_archive}"
@@ -21,12 +22,16 @@ SITE_URL="http://$(curl -fsS http://169.254.169.254/latest/meta-data/public-host
 
 echo "Starting WordPress bootstrap for $${SITE_TITLE}..."
 apt-get update -y
+
+# INSTALLING ALL NECESSARY PACKAGES AT ONCE
 apt-get install -y apache2 mysql-client unzip curl rsync php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip
 
+# WP-RDS --> DEPENDING ON WHAT'S CHOSEN, AWS CLI WILL BE INSTALLED TO MAKE RDS AND S3
 if [ "$${INSTALL_MODE}" = "rds" ] && [ -n "$${S3_BACKUP_BUCKET}" ]; then
   apt-get install -y awscli
 fi
 
+# WP-LITE --> INSTALLING MARIADB TO HANDLE THE STORAGE FOR WORDPRESS
 if [ "$${INSTALL_MODE}" = "local-db" ]; then
   apt-get install -y mariadb-server
   systemctl enable mariadb
@@ -37,13 +42,16 @@ if [ "$${INSTALL_MODE}" = "local-db" ]; then
   mysql -e "FLUSH PRIVILEGES;"
 fi
 
+# MAKING APACHE RUN AUTOMATICALLY
 systemctl enable apache2
 systemctl start apache2
 
+# BEGIN BUILDING WORDPRESS ON EC2
 cd /tmp
 curl -fsSLO https://wordpress.org/latest.zip
 unzip -q latest.zip
 rm -f /var/www/html/index.html
+# GETTING WORDPRESS TO GET HOSTED BY APACHE
 rsync -a /tmp/wordpress/ /var/www/html/
 
 cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
@@ -56,6 +64,7 @@ curl -fsSLo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh
 chmod +x /usr/local/bin/wp
 chown -R www-data:www-data /var/www/html/
 
+# SETTING THE WORDPRESS STORAGE USING PARAMS COLLECTED
 if ! sudo -u www-data wp core is-installed --path=/var/www/html; then
   sudo -u www-data wp core install \
     --path=/var/www/html \
@@ -67,10 +76,12 @@ if ! sudo -u www-data wp core is-installed --path=/var/www/html; then
     --skip-email
 fi
 
+# SETTING DYNAMICALLY THE DEFAULT PARAMETERS FOR CALLS LATER
 HOME_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='Home' --post_status=publish --porcelain)"
 ABOUT_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='About' --post_status=publish --porcelain)"
 SERVICES_ID="$(sudo -u www-data wp post create --path=/var/www/html --post_type=page --post_title='Services' --post_status=publish --porcelain)"
 
+# BUILDING WEBPAGE, DOING SO W/ WP CLI TO AUTOMATE FOR FURTURE POTENTIAL CHANGES
 sudo -u www-data wp post update "$${HOME_ID}" --path=/var/www/html --post_content="<h2>Welcome to $${SITE_TITLE}</h2><p>This WordPress site is hosted on AWS infrastructure created with Terraform.</p><p><a href='/demo/'>View the infrastructure demo</a>.</p>"
 sudo -u www-data wp post update "$${ABOUT_ID}" --path=/var/www/html --post_content="<p>This site demonstrates repeatable WordPress hosting using AWS, Terraform, EC2, and either local MariaDB or RDS MySQL.</p>"
 sudo -u www-data wp post update "$${SERVICES_ID}" --path=/var/www/html --post_content="<p>Example services include WordPress rehosting, infrastructure as code, AWS cost controls, backups, and hardening.</p>"
@@ -160,6 +171,8 @@ find /var/www/html/ -type d -exec chmod 755 {} \;
 find /var/www/html/ -type f -exec chmod 644 {} \;
 systemctl restart apache2
 
+
+# OUTPUT NECESSARY DATA TO GET GOING
 echo "WordPress is installed at $${SITE_URL}."
 echo "Static infrastructure demo is available at $${SITE_URL}/demo/."
 echo "WordPress admin is available at $${SITE_URL}/wp-admin/ with user $${WP_ADMIN_USER}."

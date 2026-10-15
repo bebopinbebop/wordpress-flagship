@@ -1,6 +1,7 @@
 # Security Notes
 
 This project starts with a simple MVP and should be hardened before production use.
+It is advised that after making passwords from the start script, you should change the password within the WordPress admin dashboard. This should also be done to the MariaDB held within the EC2 instances, which can be accessed through your `aws` dashboard.
 
 ## Current MVP Security Goals
 

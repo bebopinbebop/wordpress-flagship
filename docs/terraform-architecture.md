@@ -2,6 +2,8 @@
 
 This document explains how the Terraform code is organized, why the project uses separate environments, and how reusable modules keep the infrastructure code clean.
 
+You will see how bassically the project builds upon itself, with `wp-lite` is the basic building block for both `wp-rds` and `wp-mig`.
+
 ## 🎯 Purpose
 
 The Terraform layout is designed to support multiple WordPress deployment strategies without copying the same AWS resource code over and over.

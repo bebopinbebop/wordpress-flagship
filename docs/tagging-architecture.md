@@ -1,6 +1,8 @@
 # Resource Tagging Architecture
 
-This project treats AWS resource identity as a hierarchy:
+A `tagging` system is used within the project to automate the building of cloud resources so to trace project origin and associated supported assets.
+
+The AWS resource identity is treated as a hierarchy, which follows:
 
 ```text
 Project -> Architecture -> Deployment -> Resource

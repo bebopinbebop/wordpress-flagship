@@ -36,12 +36,6 @@ Cost controls:
 - Keep migration artifacts small and remove unneeded S3 objects.
 - Avoid storing client database dumps longer than necessary.
 
-## AWS Budget Suggestions
-
-- Create an AWS Budget for monthly spend.
-- Add email alerts at 50%, 80%, and 100% of the budget.
-- Tag all resources with the project name.
-- Review idle EC2, RDS, EBS, and snapshot resources weekly.
 
 ## Cleanup Script
 
